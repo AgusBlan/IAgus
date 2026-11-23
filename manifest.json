@@ -1,9 +1,0 @@
-{
-      "name": "Agus IA",
-        "short_name": "Agus IA",
-          "start_url": ".",
-            "display": "standalone",
-              "background_color": "#fff6f8",
-                "theme_color": "#ffc7dd"
-                }
-}
