@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agus IA</title>
+<title>IAgus</title>
 <meta name="theme-color" content="#ffc7dd">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
@@ -39,7 +39,7 @@ mark.rosa{background:#ff9ecb} mark.verde{background:#a8f1c0} mark.azul{backgroun
 </head>
 <body>
 <div class="sidebar" id="sidebar">
-<h3 style="text-align:center;background:white;border-radius:15px;padding:8px;margin:0">🌸 Agus IA<br><span style="font-size:11px">v41 Adaptable + PDF</span></h3>
+<h3 style="text-align:center;background:white;border-radius:15px;padding:8px;margin:0">🌸 IAgus<br><span style="font-size:11px">v41 Adaptable + PDF</span></h3>
 <div style="display:flex;gap:6px">
 <button class="modo-btn" id="btnAdulta" style="background:#a8e0ff" onclick="cambiarModo('rapido')">⚡ Rápido</button>
 <button class="modo-btn" id="btnPrivado" style="background:#b8f1cc" onclick="cambiarModo('privado')">🔒 Privado</button>
@@ -302,7 +302,7 @@ function generarImagen(promptManual){
   var p=(promptManual || document.getElementById("promptImagen").value.trim() || document.getElementById("entrada").value.trim());
   if(!p){ alert("Escribí qué imagen querés"); return; }
   var url="https://image.pollinations.ai/prompt/"+encodeURIComponent(p+" , cute, soft colors, high quality")+"?width=512&height=512&seed="+Date.now();
-  agregarMensaje("Agus IA",'🎨 Te generé esto de: <b>'+p+'</b><br><img src="'+url+'"><br><a href="'+url+'" target="_blank">🔗 Abrir en grande / Descargar</a>');
+  agregarMensaje("IAgus",'🎨 Te generé esto de: <b>'+p+'</b><br><img src="'+url+'"><br><a href="'+url+'" target="_blank">🔗 Abrir en grande / Descargar</a>');
   aprenderDeVos("Agus pidió imagen: "+p);
 }
 </script>
