@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agus IA</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial;background:#fff6f8;color:#5a3a45;display:flex;min-height:100vh}
+.sidebar{width:180px;background:#ffc7dd;padding:10px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;background-size:cover;background-position:center}
+.side-btn{border:none;padding:11px;border-radius:15px;text-align:left;font-weight:bold;font-size:13px;cursor:pointer}
+.side-btn.active{outline:3px solid white}
+.main{flex:1;display:flex;flex-direction:column;padding:10px;min-width:0}
+#chat{flex:1;background:white;border-radius:18px;padding:14px;border:2px dashed #ffc7dd;min-height:300px;overflow-y:auto;background-size:cover;background-position:center}
+.msg{padding:10px;border-radius:12px;margin:8px 0;word-break:break-word;white-space:pre-wrap}
+.vos{background:#fff0a8}.ia{background:#ffe3ee}
+textarea{width:100%;height:70px;padding:12px;border-radius:12px;border:2px solid #ffc7dd;font-size:17px;font-family:Arial;resize:none;background:white}
+.btn{width:100%;padding:13px;border:none;border-radius:15px;font-weight:bold;margin-top:8px;font-size:14px;cursor:pointer}
+.modo-btn{padding:10px;border:none;border-radius:15px;font-weight:bold;cursor:pointer;flex:1;font-size:13px}
+.modo-activo{outline:3px solid white;transform:scale(1.03)}
+</style>
+</head>
+<body>
+<div class="sidebar" id="sidebar">
+<h3 style="text-align:center;background:white;border-radius:15px;padding:8px">🌸 Agus IA</h3>
+<div style="background:white;padding:10px;border-radius:15px;font-size:12px;text-align:center">Aprende de vos<br>y del mundo</div>
+<div style="display:flex;gap:6px">
+<button class="modo-btn" id="btnRapido" style="background:#a8e0ff" onclick="cambiarModo('rapido')">⚡ Rápida</button>
+<button class="modo-btn" id="btnPrivado" style="background:#b8f1cc" onclick="cambiarModo('privado')">🔒 Privada</button>
+</div>
+<p id="modoTexto" style="background:white;padding:8px;border-radius:12px;font-size:12px;text-align:center;margin:0"></p>
+<div id="listaChats"></div>
+<button class="btn" style="background:white" onclick="crearChat()">+ Crear chat 💖</button>
+<button class="btn" style="background:#ffcf9e" onclick="mostrarPerfil()">👤 Mi perfil</button>
+<div id="perfilBox" style="display:none;background:white;padding:10px;border-radius:15px">
+<textarea id="miPerfilTexto" style="height:120px" placeholder="Contame vos..."></textarea>
+<button class="btn" style="background:#ff8fb8;color:white" onclick="guardarPerfil()">💖 Guardar</button>
+</div>
+<button class="btn" style="background:#ff8fb8;color:white" onclick="borrarTodo()">🗑️ Borrar TODO lo mío</button>
+<button class="btn" style="background:#b8f1cc" onclick="miUbicacion()">🗺️ Mi ubicación</button>
+<button class="btn" style="background:#e2c6ff" onclick="mostrarTemas()">🎨 Cambiar interfaz</button>
+<div id="temas" style="display:none;background:white;padding:10px;border-radius:15px">
+Fondo <input type="color" id="cFondo" value="#fff6f8" onchange="cambiarTema()"><br>
+Barra <input type="color" id="cRosa" value="#ffc7dd" onchange="cambiarTema()"><br>
+Botón <input type="color" id="cBoton" value="#ff8fb8" onchange="cambiarTema()"><br>
+Letras <input type="color" id="cLetra" value="#5a3a45" onchange="cambiarTema()"><br>
+<button class="btn" style="background:#ffc7dd" onclick="aplicarTema('#fff6f8','#ffc7dd','#ff8fb8','#5a3a45')">🌸 Clefairy</button>
+<button class="btn" style="background:#b8f1cc" onclick="aplicarTema('#f0fff4','#b8f1cc','#4caf7d','#2a4a35')">🍃 Menta</button>
+<button class="btn" style="background:#e2c6ff" onclick="aplicarTema('#f8f0ff','#e2c6ff','#b07dff','#4a2a5a')">💜 Lila</button>
+</div>
+<input type="file" id="fotoChat" accept="image/*" style="display:none">
+<input type="file" id="fotoMenu" accept="image/*" style="display:none">
+<button class="btn" style="background:#ffb8d9" onclick="document.getElementById('fotoChat').click()">🖼️ Foto fondo del chat</button>
+<button class="btn" style="background:#ffc7dd" onclick="document.getElementById('fotoMenu').click()">🖼️ Foto fondo del menú</button>
+<button class="btn" style="background:white" onclick="quitarFotos()">❌ Quitar fotos</button>
+</div>
+<div class="main">
+<div id="chat"></div>
+<p id="ubicacion" style="font-size:13px"></p>
+<div id="mapaBox" style="display:none"><iframe id="mapa" width="100%" height="250" style="border:0;border-radius:15px"></iframe></div>
+<p id="estadoIA" style="font-size:13px;text-align:center;font-weight:bold"></p>
+<form onsubmit="hablar();return false;">
+<textarea id="entrada" placeholder="Hablame..."></textarea>
+<button type="submit" class="btn" style="background:#ff8fb8;color:white">ENVIAR 💖</button>
+</form>
+<button class="btn" style="background:#b8f1cc" onclick="cargarIA()">⬇️ Descargar cerebro 1.5B</button>
+<input type="file" id="subirArchivo" style="display:none">
+<button class="btn" style="background:#fff0a8" onclick="document.getElementById('subirArchivo').click()">📎 Subir archivo</button>
+<button class="btn" style="background:#a8e0ff" id="btnAudio" onclick="grabarAudio()">🎤 Grabar audio</button>
+<button class="btn" style="background:#e2c6ff" onclick="leerUltimo()">🔊 Leeme lo último</button>
+</div>
+<script type="module">
+import { CreateMLCEngine } from "https://esm.run/@mlc-ai/web-llm";
+window.engine = null;
+window.cargando = false;
+window.cargarIA = async function(){
+  if(window.engine) return;
+  if(window.cargando) return;
+  window.cargando = true;
+  document.getElementById("estadoIA").innerText = "⬇️ Descargando...";
+  try{
+    window.engine = await CreateMLCEngine("Qwen2.5-1.5B-Instruct-q4f16_1-MLC", {
+      initProgressCallback: (p) => { document.getElementById("estadoIA").innerText = "⬇️ " + Math.round(p.progress*100) + "%"; }
+    });
+    document.getElementById("estadoIA").innerText = "✅ Listo";
+    window.cargando = false;
+  }catch(e){
+    document.getElementById("estadoIA").innerText = "No se pudo descargar, intentá de nuevo";
+    window.cargando = false;
+  }
+};
+</script>
+<script>
+var modoActual = "rapido";
+var mensajesMostrados=[];
+var chats={}; var orden=[]; var memoriaAprendida=[]; var sec="general"; var colores=["#b8f1cc","#fff0a8","#ffcf9e","#a8e0ff","#a8f0b8","#e2c6ff","#ffb8a8"];
+var miPerfil="";
+try{ miPerfil=localStorage.getItem("miPerfilAgus")||""; }catch(e){}
+try{
+  var c1=localStorage.getItem("chatsAgusV2"); if(c1) chats=JSON.parse(c1);
+  var o1=localStorage.getItem("ordenAgus"); if(o1) orden=JSON.parse(o1);
+  var m1=localStorage.getItem("memoriaAprendidaAgus"); if(m1) memoriaAprendida=JSON.parse(m1);
+}catch(e){ chats={}; orden=[]; memoriaAprendida=[]; }
+if(!orden||orden.length===0){
+  orden=[{id:"general",nombre:"General",emoji:"💖"},{id:"libros",nombre:"Libros",emoji:"📚"},{id:"videos",nombre:"Videos",emoji:"🎬"},{id:"facu",nombre:"Facu",emoji:"🎓"},{id:"gim",nombre:"Gim",emoji:"🏋️"},{id:"diario",nombre:"Diario",emoji:"📓"},{id:"agenda",nombre:"Agenda",emoji:"📅"}];
+  chats={}; for(var i=0;i<orden.length;i++){ chats[orden[i].id]=[]; } sec="general";
+} else { sec=orden[0].id; for(var k=0;k<orden.length;k++){ if(!chats[orden[k].id]) chats[orden[k].id]=[]; } }
+function aprenderDeVos(texto){
+  var t = texto.trim();
+  if(t.length < 3) return;
+  memoriaAprendida.push({fecha: Date.now(), texto: t, seccion: sec});
+  if(memoriaAprendida.length > 500) memoriaAprendida = memoriaAprendida.slice(-500);
+  try{ localStorage.setItem("memoriaAprendidaAgus", JSON.stringify(memoriaAprendida)); }catch(e){}
+}
+function construirMemoria(){
+  var mem = "";
+  if(miPerfil) mem += "Perfil que Agus escribió: " + miPerfil + "\n";
+  var ult = memoriaAprendida.slice(-60);
+  for(var i=0;i<ult.length;i++){ mem += "- Agus dijo: " + ult[i].texto + "\n"; }
+  for(var j=0;j<mensajesMostrados.length;j++){
+    if(mensajesMostrados[j].t.indexOf("pensando")>=0) continue;
+    mem += mensajesMostrados[j].q + ": " + mensajesMostrados[j].t.replace(/<[^>]*>/g,"") + "\n";
+  }
+  return mem;
+}
+function cambiarModo(m){
+  modoActual=m;
+  var br=document.getElementById("btnRapido"), bp=document.getElementById("btnPrivado");
+  if(m==="rapido"){ br.classList.add("modo-activo"); bp.classList.remove("modo-activo"); document.getElementById("modoTexto").innerText="⚡ Rápida"; }
+  else { bp.classList.add("modo-activo"); br.classList.remove("modo-activo"); document.getElementById("modoTexto").innerText="🔒 Privada"; }
+}
+function guardar(){ try{ localStorage.setItem("chatsAgusV2",JSON.stringify(chats)); localStorage.setItem("ordenAgus",JSON.stringify(orden)); localStorage.setItem("memoriaAprendidaAgus",JSON.stringify(memoriaAprendida)); }catch(e){} }
+function mostrarChat(){
+  var chat=document.getElementById("chat"); var h="";
+  for(var i=0;i<mensajesMostrados.length;i++){ var m=mensajesMostrados[i]; var cls=(m.q==="Vos"?"vos":"ia"); h+='<div class="msg '+cls+'"><b>'+m.q+':</b> '+m.t+'</div>'; }
+  chat.innerHTML=h; chat.scrollTop=99999;
+}
+function hablar(){
+  var el=document.getElementById("entrada"); var mensaje=el.value.trim(); if(!mensaje) return;
+  aprenderDeVos(mensaje);
+  mensajesMostrados.push({q:"Vos",t:mensaje}); el.value=""; mostrarChat();
+  mensajesMostrados.push({q:"Agus IA",t:"💭 pensando..."}); mostrarChat();
+  responderIA(mensaje);
+}
+async function responderIA(mensaje){
+  var r=await hablarConIA(mensaje);
+  mensajesMostrados.pop();
+  mensajesMostrados.push({q:"Agus IA",t:r});
+  aprenderDeVos("Agus IA respondió: " + r);
+  mostrarChat();
+  try{ if(!chats[sec]) chats[sec]=[]; chats[sec].push({t:mensaje,q:"Vos"}); chats[sec].push({t:r,q:"Agus IA"}); guardar(); }catch(e){}
+}
+async function aprenderDelMundo(pregunta){
+  var info = "";
+  var q = pregunta.trim();
+  if(q.length < 4) return "";
+  try{
+    var ddg = await fetch("https://api.duckduckgo.com/?q=" + encodeURIComponent(q) + "&format=json&no_html=1&skip_disambig=1");
+    var d = await ddg.json();
+    if(d.AbstractText) info += "Del mundo - DuckDuckGo: " + d.AbstractText + "\n";
+    if(d.RelatedTopics && d.RelatedTopics[0] && d.RelatedTopics[0].Text) info += "Del mundo - Dato relacionado: " + d.RelatedTopics[0].Text + "\n";
+  }catch(e){}
+  try{
+    var wiki = await fetch("https://es.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(q));
+    if(wiki.ok){ var w = await wiki.json(); if(w.extract) info += "Del mundo - Wikipedia: " + w.extract.slice(0,1500) + "\n"; }
+  }catch(e){}
+  return info;
+}
+function esRespuestaValida(txt){
+  if(!txt) return false;
+  var t = txt.trim().toLowerCase();
+  if(t.length < 2) return false;
+  if(t.includes("404") || t.includes("not found") || t.includes("<html") || t.includes("<!doctype")) return false;
+  return true;
+}
+async function hablarConIA(mensaje){
+  var memoria = construirMemoria();
+  var infoMundo = "";
+  if(modoActual==="rapido") infoMundo = await aprenderDelMundo(mensaje);
+  var systemPrompt = "Sos Agus IA. Aprendé de lo que te dice Agus y del mundo, y respondé por vos misma. No tenés frases guardadas, no repetís guiones. Usá lo que aprendiste de Agus para hablarle como ella quiere que le hables. Si Agus te pregunta cómo querés que te llame, decidí vos, elegí un nombre y decíselo. Si Agus te pregunta algo del mundo, usá la información del mundo que te doy. Si no sabés algo, decilo con tus palabras y preguntale. Hablás argentino, informal, con emojis. Podés responder corto si la charla es cortita, o largo y completo si la pregunta necesita mucho texto. Nunca repitas la misma frase.";
+  var userPrompt = "Lo que aprendiste de Agus hasta ahora:\n" + memoria + "\n\nLo que aprendiste del mundo ahora:\n" + (infoMundo || "No hay info nueva del mundo, usá lo que ya sabés.") + "\n\nAgus ahora te dice: " + mensaje;
+
+  // 1. Modo Rápido: Pollinations por POST, solo POST, sin GET que daba 404
+  if(modoActual==="rapido"){
+    try{
+      var resp = await fetch("https://text.pollinations.ai/openai", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ model:"openai", messages:[{role:"system", content: systemPrompt},{role:"user", content: userPrompt}], temperature:0.8, max_tokens:1200 })
+      });
+      if(resp.ok){
+        var data = await resp.json();
+        var txt = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : "";
+        if(esRespuestaValida(txt)) return txt;
+      }
+    }catch(e){}
+    // 2. Si Pollinations falla, usa cerebro local si está descargado, sin mostrar error
+    if(window.engine){
+      try{
+        var r3 = await window.engine.chat.completions.create({ messages:[{role:"system", content: systemPrompt},{role:"user", content: userPrompt}], temperature:0.8, max_tokens:1000, repetition_penalty:1.15 });
+        var t3 = r3.choices[0].message.content;
+        if(esRespuestaValida(t3)) return t3;
+      }catch(e){}
+    }
+    // 3. Si no hay cerebro ni Pollinations, usa lo que aprendió del mundo
+    if(infoMundo) return infoMundo;
+    // 4. Si todo falla, pide que repita con sus palabras, pero sin mostrar 404
+    return "Uy, se me cortó un segundo la señal, ¿me repetís eso? Quiero responderte bien.";
+  }
+
+  // Modo Privado - cerebro local
+  if(window.engine){
+    try{
+      var respP = await window.engine.chat.completions.create({ messages:[{role:"system", content: systemPrompt},{role:"user", content: userPrompt}], temperature:0.7, max_tokens:1000, repetition_penalty:1.15, frequency_penalty:0.2 });
+      var texto = respP.choices[0].message.content || "";
+      if(!esRespuestaValida(texto)) return "Uy, me trabé un segundo, ¿me repetís eso?";
+      var lineas = texto.split("\n"); var vistas={}; var limpias=[];
+      for(var j=0;j<lineas.length;j++){ var l=lineas[j].trim(); if(l===""){ limpias.push(lineas[j]); continue; } vistas[l]=(vistas[l]||0)+1; if(vistas[l]<=2) limpias.push(lineas[j]); }
+      return limpias.join("\n").trim() || texto;
+    }catch(e){}
+  }
+  return "Todavía no descargaste el cerebro privado. Si querés que te hable ya, poné modo ⚡ Rápida arriba, y si querés privado, tocá ⬇️ Descargar cerebro abajo.";
+}
+function renderLista(){ try{ var h=""; for(var i=0;i<orden.length;i++){ var c=orden[i]; var cls=(c.id===sec?"side-btn active":"side-btn"); h+='<button class="'+cls+'" style="background:'+colores[i%colores.length]+'" onclick="cambiar(\''+c.id+'\')"> '+c.emoji+' '+c.nombre+' <span onclick="event.stopPropagation();borrarChat(\''+c.id+'\')">✕</span></button>'; } document.getElementById("listaChats").innerHTML=h; }catch(e){} }
+function crearChat(){ var n=prompt("Nombre del chat"); if(!n) return; var e=prompt("Emoji")||"💖"; var id="chat_"+Date.now(); chats[id]=[]; orden.push({id:id,nombre:n,emoji:e}); sec=id; guardar(); renderLista(); mensajesMostrados=[]; mostrarChat(); }
+function borrarChat(id){ if(!confirm("¿Borrar?")) return; delete chats[id]; var nuevo=[]; for(var i=0;i<orden.length;i++){ if(orden[i].id!==id) nuevo.push(orden[i]); } orden=nuevo; if(orden.length===0){ var nid="chat_"+Date.now(); chats[nid]=[]; orden=[{id:nid,nombre:"General",emoji:"💖"}]; } sec=orden[0].id; guardar(); renderLista(); mensajesMostrados=[]; mostrarChat(); }
+function cambiar(id){ sec=id; renderLista(); mensajesMostrados=[]; var lista=chats[sec]||[]; for(var i=0;i<lista.length;i++){ mensajesMostrados.push(lista[i]); } mostrarChat(); }
+function mostrarPerfil(){ var d=document.getElementById("perfilBox"); if(d.style.display==="block") d.style.display="none"; else { d.style.display="block"; document.getElementById("miPerfilTexto").value=miPerfil; } }
+function guardarPerfil(){ miPerfil=document.getElementById("miPerfilTexto").value.trim(); try{ localStorage.setItem("miPerfilAgus",miPerfil); }catch(e){} aprenderDeVos("Mi perfil es: " + miPerfil); document.getElementById("perfilBox").style.display="none"; }
+function borrarTodo(){ if(!confirm("¿Borrar TODO lo mío?")) return; try{ localStorage.removeItem("miPerfilAgus"); localStorage.removeItem("chatsAgusV2"); localStorage.removeItem("ordenAgus"); localStorage.removeItem("memoriaAprendidaAgus"); localStorage.removeItem("fotoChatAgus"); localStorage.removeItem("fotoMenuAgus"); }catch(e){} miPerfil=""; chats={}; orden=[]; memoriaAprendida=[]; mensajesMostrados=[]; document.getElementById("chat").style.backgroundImage="none"; document.getElementById("sidebar").style.backgroundImage="none"; location.reload(); }
+function mostrarTemas(){ var d=document.getElementById("temas"); if(d.style.display==="block") d.style.display="none"; else d.style.display="block"; }
+function cambiarTema(){ var f=document.getElementById("cFondo").value; var r=document.getElementById("cRosa").value; var b=document.getElementById("cBoton").value; var l=document.getElementById("cLetra").value; document.body.style.background=f; document.body.style.color=l; document.getElementById("sidebar").style.background=r; }
+function aplicarTema(fondo,rosa,boton,letra){ document.getElementById("cFondo").value=fondo; document.getElementById("cRosa").value=rosa; document.getElementById("cBoton").value=boton; document.getElementById("cLetra").value=letra; cambiarTema(); }
+function ponerFotoChat(){ var f=document.getElementById("fotoChat").files[0]; if(!f) return; var lector=new FileReader(); lector.onload=function(){ document.getElementById("chat").style.backgroundImage="url("+lector.result+")"; document.getElementById("chat").style.backgroundSize="cover"; document.getElementById("chat").style.backgroundPosition="center"; try{ localStorage.setItem("fotoChatAgus",lector.result); }catch(e){} }; lector.readAsDataURL(f); }
+function ponerFotoMenu(){ var f=document.getElementById("fotoMenu").files[0]; if(!f) return; var lector=new FileReader(); lector.onload=function(){ document.getElementById("sidebar").style.backgroundImage="url("+lector.result+")"; document.getElementById("sidebar").style.backgroundSize="cover"; document.getElementById("sidebar").style.backgroundPosition="center"; try{ localStorage.setItem("fotoMenuAgus",lector.result); }catch(e){} }; lector.readAsDataURL(f); }
+function quitarFotos(){ document.getElementById("chat").style.backgroundImage="none"; document.getElementById("sidebar").style.backgroundImage="none"; try{ localStorage.removeItem("fotoChatAgus"); localStorage.removeItem("fotoMenuAgus"); }catch(e){} }
+try{ document.getElementById("fotoChat").addEventListener("change",ponerFotoChat); document.getElementById("fotoMenu").addEventListener("change",ponerFotoMenu); }catch(e){}
+try{ var fc=localStorage.getItem("fotoChatAgus"); if(fc){ document.getElementById("chat").style.backgroundImage="url("+fc+")"; document.getElementById("chat").style.backgroundSize="cover"; } var fm=localStorage.getItem("fotoMenuAgus"); if(fm){ document.getElementById("sidebar").style.backgroundImage="url("+fm+")"; document.getElementById("sidebar").style.backgroundSize="cover"; } }catch(e){}
+var grabando=false; var recorder=null; var trozos=[];
+function grabarAudio(){ var btn=document.getElementById("btnAudio"); if(!grabando){ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ alert("Tu tablet no deja grabar"); return; } navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){ recorder=new MediaRecorder(stream); trozos=[]; recorder.ondataavailable=function(e){ trozos.push(e.data); }; recorder.onstop=function(){ var audio=new Blob(trozos,{type:"audio/webm"}); var url=URL.createObjectURL(audio); mensajesMostrados.push({t:'🎤 Audio <br><audio controls src="'+url+'"></audio>',q:"Vos"}); mostrarChat(); hablarConIA("Agus me mandó un audio, respondé como si lo hubieras escuchado").then(function(r){ mensajesMostrados.push({t:r,q:"Agus IA"}); mostrarChat(); }); }; recorder.start(); grabando=true; btn.innerText="⏹️ Parar"; }).catch(function(){}); } else { try{ recorder.stop(); }catch(e){} grabando=false; btn.innerText="🎤 Grabar audio"; } }
+function leerUltimo(){ try{ var chat=document.getElementById("chat"); var voz=new SpeechSynthesisUtterance(chat.innerText.slice(-500)); voz.lang="es-AR"; speechSynthesis.speak(voz); }catch(e){} }
+function miUbicacion(){ if(!navigator.geolocation){ document.getElementById("ubicacion").innerText="Sin GPS"; return; } document.getElementById("ubicacion").innerText="Buscando..."; navigator.geolocation.getCurrentPosition(function(p){ var lat=p.coords.latitude; var lon=p.coords.longitude; document.getElementById("ubicacion").innerText="Estás acá: "+lat.toFixed(4)+", "+lon.toFixed(4); try{ localStorage.setItem("ultimaUbicacionAgus", JSON.stringify({lat:lat,lon:lon})); }catch(e){} document.getElementById("mapaBox").style.display="block"; document.getElementById("mapa").src="https://www.openstreetmap.org/export/embed.html?bbox="+(lon-0.02)+"%2C"+(lat-0.02)+"%2C"+(lon+0.02)+"%2C"+(lat+0.02)+"&layer=mapnik&marker="+lat+"%2C"+lon; aprenderDeVos("Mi ubicación es: " + lat.toFixed(4) + ", " + lon.toFixed(4)); }); }
+try{ document.getElementById("subirArchivo").addEventListener("change",function(e){ var f=e.target.files[0]; if(!f) return; var reader=new FileReader(); reader.onload=function(){ aprenderDeVos("Agus subió un archivo llamado " + f.name + " que dice: " + reader.result.slice(0,2000)); mensajesMostrados.push({t:"📎 "+f.name,q:"Vos"}); mostrarChat(); hablarConIA("Agus subió el archivo " + f.name + ", ¿qué te parece?").then(function(r){ mensajesMostrados.push({t:r,q:"Agus IA"}); mostrarChat(); }); }; reader.readAsText(f); }); }catch(e){}
+try{ document.getElementById("entrada").addEventListener("keydown",function(e){ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); hablar(); } }); }catch(e){}
+try{ renderLista(); cambiarModo('rapido'); mostrarChat(); }catch(e){}
+</script>
+</body>
+</html>
