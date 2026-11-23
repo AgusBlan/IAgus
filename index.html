@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agus IA</title>
+<link rel="manifest" href="manifest.json">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial;background:#fff6f8;color:#5a3a45;display:flex;min-height:100vh}
+.sidebar{width:180px;background:#ffc7dd;padding:10px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;background-size:cover;background-position:center}
+.side-btn{border:none;padding:11px;border-radius:15px;text-align:left;font-weight:bold;font-size:13px;cursor:pointer}
+.side-btn.active{outline:3px solid white}
+.main{flex:1;display:flex;flex-direction:column;padding:10px;min-width:0}
+#chat{flex:1;background:white;border-radius:18px;padding:14px;border:2px dashed #ffc7dd;min-height:300px;overflow-y:auto;background-size:cover;background-position:center}
+.msg{padding:10px;border-radius:12px;margin:8px 0;word-break:break-word}
+.vos{background:#fff0a8}.ia{background:#ffe3ee}
+textarea{width:100%;height:70px;padding:12px;border-radius:12px;border:2px solid #ffc7dd;font-size:17px;font-family:Arial;resize:none;background:white}
+.btn{width:100%;padding:13px;border:none;border-radius:15px;font-weight:bold;margin-top:8px;font-size:14px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="sidebar" id="sidebar">
+<h3 style="text-align:center;background:white;border-radius:15px;padding:8px">🌸 Agus IA 🔒</h3>
+<div style="background:white;padding:10px;border-radius:15px;font-size:12px;text-align:center"><b>🔒 Privada + 🌍 Pública</b><br>Tu info queda acá.<br>Lo público lo busca en Wikipedia.</div>
+<div id="listaChats"></div>
+<button class="btn" style="background:white" onclick="crearChat()">+ Crear chat 💖</button>
+<button class="btn" style="background:#ffcf9e" onclick="mostrarPerfil()">👤 Mi perfil</button>
+<div id="perfilBox" style="display:none;background:white;padding:10px;border-radius:15px">
+<b>👤 ¿Quién sos?:</b><br>
+<textarea id="miPerfilTexto" style="height:120px" placeholder="Contame vos..."></textarea>
+<button class="btn" style="background:#ff8fb8;color:white" onclick="guardarPerfil()">💖 Guardar solo acá</button>
+</div>
+<button class="btn" style="background:#ff8fb8;color:white" onclick="borrarTodo()">🗑️ Borrar TODO lo mío</button>
+<button class="btn" style="background:#b8f1cc" onclick="miUbicacion()">🗺️ Mi ubicación</button>
+<button class="btn" style="background:#e2c6ff" onclick="mostrarTemas()">🎨 Cambiar interfaz</button>
+<div id="temas" style="display:none;background:white;padding:10px;border-radius:15px">
+Fondo <input type="color" id="cFondo" value="#fff6f8" onchange="cambiarTema()"><br>
+Barra <input type="color" id="cRosa" value="#ffc7dd" onchange="cambiarTema()"><br>
+Botón <input type="color" id="cBoton" value="#ff8fb8" onchange="cambiarTema()"><br>
+Letras <input type="color" id="cLetra" value="#5a3a45" onchange="cambiarTema()"><br>
+<button class="btn" style="background:#ffc7dd" onclick="aplicarTema('#fff6f8','#ffc7dd','#ff8fb8','#5a3a45')">🌸 Clefairy</button>
+<button class="btn" style="background:#b8f1cc" onclick="aplicarTema('#f0fff4','#b8f1cc','#4caf7d','#2a4a35')">🍃 Menta</button>
+<button class="btn" style="background:#e2c6ff" onclick="aplicarTema('#f8f0ff','#e2c6ff','#b07dff','#4a2a5a')">💜 Lila</button>
+</div>
+<input type="file" id="fotoChat" accept="image/*" style="display:none">
+<input type="file" id="fotoMenu" accept="image/*" style="display:none">
+<button class="btn" style="background:#ffb8d9" onclick="document.getElementById('fotoChat').click()">🖼️ Foto fondo del chat</button>
+<button class="btn" style="background:#ffc7dd" onclick="document.getElementById('fotoMenu').click()">🖼️ Foto fondo del menú</button>
+<button class="btn" style="background:white" onclick="quitarFotos()">❌ Quitar fotos</button>
+<div style="background:white;padding:10px;border-radius:15px;font-size:12px"><b>📎 Mis archivos:</b><br><div id="listaArchivos">Ninguno todavía</div></div>
+</div>
+<div class="main">
+<div id="chat"><div class="msg ia"><b>Agus IA 🔒:</b> Hola, soy privada + pública. Lo tuyo queda acá, lo público lo busco en Wikipedia. Tocá ⬇️ Descargar mi cerebro para empezar 💖</div></div>
+<p id="ubicacion" style="font-size:13px"></p>
+<p id="estadoIA" style="font-size:13px;text-align:center;font-weight:bold">🧠 Cerebro: no descargado</p>
+<div id="mapaBox" style="display:none;margin:10px 0;border-radius:18px;overflow:hidden;border:2px solid #ffc7dd"><iframe id="mapa" width="100%" height="220" style="border:0" src=""></iframe></div>
+<div id="archivos" style="font-size:13px"></div>
+<form onsubmit="hablar();return false;">
+<textarea id="entrada" placeholder="Hablame... Ej: Que dice Weber de la economia? / Que dice mi archivo?"></textarea>
+<button type="submit" class="btn" style="background:#ff8fb8;color:white">ENVIAR 💖</button>
+</form>
+<button class="btn" style="background:#b8f1cc" onclick="cargarIA()">⬇️ Descargar mi cerebro (1 vez)</button>
+<button class="btn" style="background:#b8f1cc" onclick="buscarOnline()">🔍 Buscar online</button>
+<input type="file" id="subirArchivo" style="display:none">
+<button class="btn" style="background:#fff0a8" onclick="document.getElementById('subirArchivo').click()">📎 Subir archivo / foto / PDF</button>
+<button class="btn" style="background:#a8e0ff" id="btnAudio" onclick="grabarAudio()">🎤 Grabar audio</button>
+<button class="btn" style="background:#e2c6ff" onclick="leerUltimo()">🔊 Leeme lo último</button>
+</div>
+<script type="module">
+import { CreateMLCEngine } from "https://esm.run/@mlc-ai/web-llm";
+window.engine=null; window.cargando=false;
+window.cargarIA=async function(){
+  if(window.engine) return; if(window.cargando) return; window.cargando=true;
+  document.getElementById("estadoIA").innerText="⬇️ Descargando cerebro... no cierres, tarda unos minutos...";
+  try{
+    window.engine=await CreateMLCEngine("Qwen2.5-0.5B-Instruct-q4f16_1-MLC",{initProgressCallback:(p)=>{ document.getElementById("estadoIA").innerText="⬇️ Descargando: "+Math.round(p.progress*100)+"% - "+p.text; }});
+    document.getElementById("estadoIA").innerText="✅ Cerebro listo, 100% privado 💖";
+    window.cargando=false;
+  }catch(e){ document.getElementById("estadoIA").innerText="No pude descargar. ¿Tenés internet y espacio? Probá de nuevo."; window.cargando=false; }
+};
+</script>
+<script>
+var mensajesMostrados=[];
+var chats={}; var orden=[]; var cerebro=[]; var misArchivos=[]; var sec="general"; var ultimoTexto="Hola"; var colores=["#b8f1cc","#fff0a8","#ffcf9e","#a8e0ff","#a8f0b8","#e2c6ff","#ffb8a8"];
+var miPerfil="";
+try{ miPerfil=localStorage.getItem("miPerfilAgus")||""; }catch(e){}
+try{ var c1=localStorage.getItem("chatsAgusV2"); if(c1) chats=JSON.parse(c1); var o1=localStorage.getItem("ordenAgus"); if(o1) orden=JSON.parse(o1); var b1=localStorage.getItem("cerebroAgus"); if(b1) cerebro=JSON.parse(b1); var a1=localStorage.getItem("archivosAgus"); if(a1) misArchivos=JSON.parse(a1); }catch(e){ chats={}; orden=[]; cerebro=[]; misArchivos=[]; }
+if(!orden||orden.length===0){
+  orden=[{id:"general",nombre:"General",emoji:"💖"},{id:"libros",nombre:"Libros",emoji:"📚"},{id:"videos",nombre:"Videos",emoji:"🎬"},{id:"facu",nombre:"Facu",emoji:"🎓"},{id:"gim",nombre:"Gim",emoji:"🏋️"},{id:"diario",nombre:"Diario",emoji:"📓"},{id:"agenda",nombre:"Agenda",emoji:"📅"}];
+  chats={}; for(var i=0;i<orden.length;i++){ chats[orden[i].id]=[]; } sec="general";
+} else { sec=orden[0].id; for(var k=0;k<orden.length;k++){ if(!chats[orden[k].id]) chats[orden[k].id]=[]; } }
+function guardar(){ try{ localStorage.setItem("chatsAgusV2",JSON.stringify(chats)); localStorage.setItem("ordenAgus",JSON.stringify(orden)); localStorage.setItem("cerebroAgus",JSON.stringify(cerebro)); localStorage.setItem("archivosAgus",JSON.stringify(misArchivos)); }catch(e){} }
+function renderArchivos(){ try{ var h=""; for(var i=0;i<misArchivos.length;i++){ h+="📎 "+misArchivos[i].nombre+"<br>"; } if(!h) h="Ninguno todavía"; document.getElementById("listaArchivos").innerHTML=h; }catch(e){} }
+function mostrarChat(){
+  var chat=document.getElementById("chat"); var h="";
+  for(var i=0;i<mensajesMostrados.length;i++){ var m=mensajesMostrados[i]; var cls=(m.q==="Vos"?"vos":"ia"); h+='<div class="msg '+cls+'"><b>'+m.q+':</b> '+m.t+'</div>'; }
+  if(h==="") h='<div class="msg ia"><b>Agus IA 🔒:</b> Hola, soy privada + pública 💖</div>';
+  chat.innerHTML=h; chat.scrollTop=99999;
+}
+function hablar(){
+  var el=document.getElementById("entrada"); var mensaje=el.value.trim(); if(!mensaje) return;
+  mensajesMostrados.push({q:"Vos",t:mensaje}); el.value=""; mostrarChat();
+  mensajesMostrados.push({q:"Agus IA",t:"💭 pensando..."}); mostrarChat();
+  responderIA(mensaje);
+}
+async function responderIA(mensaje){
+  var r=await hablarConIA(mensaje);
+  mensajesMostrados.pop(); mensajesMostrados.push({q:"Agus IA",t:r}); ultimoTexto=r.replace(/<[^>]*>/g,""); mostrarChat();
+  try{ if(!chats[sec]) chats[sec]=[]; chats[sec].push({t:mensaje,q:"Vos"}); chats[sec].push({t:r,q:"Agus IA"}); guardar(); }catch(e){}
+}
+// BUSCA INFO PÚBLICA EN WIKIPEDIA - SOLO MANDA LA PALABRA PÚBLICA, NADA TUYO
+async function buscarPublico(tema){
+  try{
+    var r=await fetch("https://es.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(tema));
+    if(!r.ok) return "";
+    var d=await r.json();
+    if(d.extract) return d.extract.slice(0,1200);
+    return "";
+  }catch(e){ return ""; }
+}
+async function hablarConIA(mensaje){
+  if(!window.engine) return "Primero tocá ⬇️ Descargar mi cerebro. Una vez descargado, pienso 100% en tu tablet 💖";
+  // 1. Si pregunta por SUS archivos, usa SOLO lo local, no internet
+  var m=mensaje.toLowerCase();
+  if(m.indexOf("mi archivo")>=0 || m.indexOf("mis archivos")>=0 || m.indexOf("que dice mi")>=0){
+    if(misArchivos.length===0) return "Todavía no me subiste ningún archivo 💖 Subí uno con 📎 Subir archivo y después preguntame qué dice.";
+    var txt="Tus archivos que me subiste vos, solo guardados acá 💖:\n";
+    for(var i=0;i<misArchivos.length;i++){ txt+="📎 "+misArchivos[i].nombre+": "+misArchivos[i].contenido.slice(0,500)+"\n\n"; }
+    return txt + "¿Querés que te resuma alguno en especial?";
+  }
+  // 2. Si es info pública, la busca en Wikipedia
+  var infoPublica="";
+  var temaPublico=mensaje.replace(/¿/g,"").replace(/\?/g,"").replace(/que es/gi,"").replace(/que dice/gi,"").replace(/segun/gi,"").trim();
+  if(temaPublico.length>3 && temaPublico.length<80){
+    infoPublica=await buscarPublico(temaPublico);
+    if(!infoPublica && mensaje.length<40) infoPublica=await buscarPublico(mensaje.replace(/¿/g,"").replace(/\?/g,"").trim());
+  }
+  // 3. Arma todo para la IA privada de tu tablet
+  var perfilTexto=miPerfil ? "Esto es lo que Agus te contó de ella: "+miPerfil : "";
+  var hist="";
+  for(var i=0;i<mensajesMostrados.length;i++){ if(mensajesMostrados[i].t.indexOf("pensando")>=0) continue; hist+=mensajesMostrados[i].q+": "+mensajesMostrados[i].t.replace(/<[^>]*>/g,"")+"\n"; }
+  var archivosTexto="";
+  for(var j=0;j<misArchivos.length;j++){ archivosTexto+="Archivo de Agus '"+misArchivos[j].nombre+"': "+misArchivos[j].contenido.slice(0,800)+"\n"; }
+  var promptSistema="Sos Agus IA, mejor amiga de Agus. Hablás argentino, informal, con humor, con emojis rosas. Conversación fluida, te acordás de todo. "+perfilTexto+" Sección: "+sec+". Si te dan info pública de Wikipedia, usala para explicar. Si te dan archivos de Agus, son privados, usalos solo para ella, no los mandes a ningún lado.";
+  var promptUsuario="Conversación hasta ahora:\n"+hist+"\nInfo pública de Wikipedia (si hay):\n"+infoPublica+"\nArchivos privados de Agus (solo acá):\n"+archivosTexto+"\nAgus ahora dice: "+mensaje+"\nRespondé corto, claro, como amiga, siguiendo la conversación.";
+  try{
+    var resp=await window.engine.chat.completions.create({messages:[{role:"system",content:promptSistema},{role:"user",content:promptUsuario}],temperature:0.7});
+    var txt=resp.choices[0].message.content;
+    if(infoPublica && txt.length<50) txt="Según Wikipedia 💖 "+infoPublica.slice(0,800)+"\n\n"+txt;
+    return txt;
+  }catch(e){ 
+    if(infoPublica) return "Según Wikipedia 💖 "+infoPublica.slice(0,900)+" ¿Te sirve así o te doy un ejemplo?";
+    return "Me trabé pensando, probá de nuevo 💖"; 
+  }
+}
+function renderLista(){ try{ var h=""; for(var i=0;i<orden.length;i++){ var c=orden[i]; var cls=(c.id===sec?"side-btn active":"side-btn"); h+='<button class="'+cls+'" style="background:'+colores[i%colores.length]+'" onclick="cambiar(\''+c.id+'\')">'+c.emoji+' '+c.nombre+' <span onclick="event.stopPropagation();borrarChat(\''+c.id+'\')">✕</span></button>'; } document.getElementById("listaChats").innerHTML=h; }catch(e){} }
+function crearChat(){ var n=prompt("Nombre del chat"); if(!n) return; var e=prompt("Emoji")||"💖"; var id="chat_"+Date.now(); chats[id]=[]; orden.push({id:id,nombre:n,emoji:e}); sec=id; guardar(); renderLista(); mensajesMostrados=[]; mostrarChat(); }
+function borrarChat(id){ if(!confirm("¿Borrar?")) return; delete chats[id]; var nuevo=[]; for(var i=0;i<orden.length;i++){ if(orden[i].id!==id) nuevo.push(orden[i]); } orden=nuevo; if(orden.length===0){ var nid="chat_"+Date.now(); chats[nid]=[]; orden=[{id:nid,nombre:"General",emoji:"💖"}]; } sec=orden[0].id; guardar(); renderLista(); mensajesMostrados=[]; mostrarChat(); }
+function cambiar(id){ sec=id; renderLista(); mensajesMostrados=[]; var lista=chats[sec]||[]; for(var i=0;i<lista.length;i++){ mensajesMostrados.push(lista[i]); } mostrarChat(); }
+function mostrarPerfil(){ var d=document.getElementById("perfilBox"); if(d.style.display==="block") d.style.display="none"; else { d.style.display="block"; document.getElementById("miPerfilTexto").value=miPerfil; } }
+function guardarPerfil(){ miPerfil=document.getElementById("miPerfilTexto").value.trim(); try{ localStorage.setItem("miPerfilAgus",miPerfil); }catch(e){} document.getElementById("perfilBox").style.display="none"; alert("Perfil guardado SOLO en tu tablet 💖"); }
+function borrarTodo(){ if(!confirm("¿Borrar TODO lo mío? Perfil, chats, archivos, fotos. No se puede recuperar.")) return; try{ localStorage.removeItem("miPerfilAgus"); localStorage.removeItem("chatsAgusV2"); localStorage.removeItem("ordenAgus"); localStorage.removeItem("cerebroAgus"); localStorage.removeItem("archivosAgus"); localStorage.removeItem("fotoChatAgus"); localStorage.removeItem("fotoMenuAgus"); }catch(e){} alert("Borrado todo 💖"); location.reload(); }
+function buscarOnline(){ var q=document.getElementById("entrada").value||"agus"; if(sec==="libros") window.open("https://openlibrary.org/search?q="+encodeURIComponent(q),"_blank"); else if(sec==="videos") window.open("https://www.youtube.com/results?search_query="+encodeURIComponent(q),"_blank"); else window.open("https://es.wikipedia.org/wiki/"+encodeURIComponent(q),"_blank"); }
+function mostrarTemas(){ var d=document.getElementById("temas"); if(d.style.display==="block") d.style.display="none"; else d.style.display="block"; }
+function cambiarTema(){ var f=document.getElementById("cFondo").value; var r=document.getElementById("cRosa").value; var b=document.getElementById("cBoton").value; var l=document.getElementById("cLetra").value; document.body.style.background=f; document.body.style.color=l; document.getElementById("sidebar").style.background=r; document.getElementById("btnEnviar").style.background=b; }
+function aplicarTema(fondo,rosa,boton,letra){ document.getElementById("cFondo").value=fondo; document.getElementById("cRosa").value=rosa; document.getElementById("cBoton").value=boton; document.getElementById("cLetra").value=letra; cambiarTema(); }
+function ponerFotoChat(){ var f=document.getElementById("fotoChat").files[0]; if(!f) return; var lector=new FileReader(); lector.onload=function(){ document.getElementById("chat").style.backgroundImage="url("+lector.result+")"; document.getElementById("chat").style.backgroundSize="cover"; document.getElementById("chat").style.backgroundPosition="center"; try{ localStorage.setItem("fotoChatAgus",lector.result); }catch(e){} }; lector.readAsDataURL(f); }
+function ponerFotoMenu(){ var f=document.getElementById("fotoMenu").files[0]; if(!f) return; var lector=new FileReader(); lector.onload=function(){ document.getElementById("sidebar").style.backgroundImage="url("+lector.result+")"; document.getElementById("sidebar").style.backgroundSize="cover"; document.getElementById("sidebar").style.backgroundPosition="center"; try{ localStorage.setItem("fotoMenuAgus",lector.result); }catch(e){} }; lector.readAsDataURL(f); }
+function quitarFotos(){ document.getElementById("chat").style.backgroundImage="none"; document.getElementById("sidebar").style.backgroundImage="none"; try{ localStorage.removeItem("fotoChatAgus"); localStorage.removeItem("fotoMenuAgus"); }catch(e){} }
+try{ document.getElementById("fotoChat").addEventListener("change",ponerFotoChat); document.getElementById("fotoMenu").addEventListener("change",ponerFotoMenu); }catch(e){}
+try{ var fc=localStorage.getItem("fotoChatAgus"); if(fc){ document.getElementById("chat").style.backgroundImage="url("+fc+")"; document.getElementById("chat").style.backgroundSize="cover"; } var fm=localStorage.getItem("fotoMenuAgus"); if(fm){ document.getElementById("sidebar").style.backgroundImage="url("+fm+")"; document.getElementById("sidebar").style.backgroundSize="cover"; } }catch(e){}
+var grabando=false; var recorder=null; var trozos=[];
+function grabarAudio(){ var btn=document.getElementById("btnAudio"); if(!grabando){ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ alert("Tu tablet no deja grabar"); return; } navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){ recorder=new MediaRecorder(stream); trozos=[]; recorder.ondataavailable=function(e){ trozos.push(e.data); }; recorder.onstop=function(){ var audio=new Blob(trozos,{type:"audio/webm"}); var url=URL.createObjectURL(audio); mensajesMostrados.push({t:'🎤 Audio <br><audio controls src="'+url+'"></audio>',q:"Vos"}); mensajesMostrados.push({t:"Escuché tu audio 💖 Todo queda acá.",q:"Agus IA"}); mostrarChat(); }; recorder.start(); grabando=true; btn.innerText="⏹️ Parar"; }).catch(function(){ alert("Dale permiso al micrófono"); }); } else { try{ recorder.stop(); }catch(e){} grabando=false; btn.innerText="🎤 Grabar audio"; } }
+function leerUltimo(){ try{ var chat=document.getElementById("chat"); var voz=new SpeechSynthesisUtterance(chat.innerText.slice(-500)); voz.lang="es-AR"; speechSynthesis.speak(voz); }catch(e){} }
+function miUbicacion(){ if(!navigator.geolocation){ document.getElementById("ubicacion").innerText="Tu tablet no tiene GPS"; return; } document.getElementById("ubicacion").innerText="Buscando GPS..."; navigator.geolocation.getCurrentPosition(function(p){ var lat=p.coords.latitude; var lon=p.coords.longitude; document.getElementById("ubicacion").innerText="Estás acá: "+lat.toFixed(4)+", "+lon.toFixed(4); document.getElementById("mapaBox").style.display="block"; document.getElementById("mapa").src="https://www.openstreetmap.org/export/embed.html?bbox="+(lon-0.02)+"%2C"+(lat-0.02)+"%2C"+(lon+0.02)+"%2C"+(lat+0.02)+"&layer=mapnik&marker="+lat+"%2C"+lon; }); }
+try{ document.getElementById("subirArchivo").addEventListener("change",function(e){
+  var f=e.target.files[0]; if(!f) return;
+  var lector=new FileReader();
+  lector.onload=function(){
+    var contenido="";
+    try{ contenido=lector.result.slice(0,3000); }catch(err){ contenido="(archivo, no se pudo leer el texto)"; }
+    // Si es imagen, no guarda el texto, solo el nombre, para no llenar la memoria
+    if(f.type.indexOf("image")>=0) contenido="(foto, la guardé como imagen)";
+    misArchivos.push({nombre:f.name, contenido:contenido, fecha:Date.now()});
+    guardar(); renderArchivos();
+    mensajesMostrados.push({t:"📎 Subí archivo: "+f.name,q:"Vos"});
+    mensajesMostrados.push({t:"Ya lo guardé SOLO en tu tablet 💖 Ahora preguntame: ¿Qué dice mi archivo? y te lo explico.",q:"Agus IA"});
+    mostrarChat();
+    document.getElementById("archivos").innerHTML+="<div>📎 "+f.name+"</div>";
+  };
+  if(f.type.indexOf("image")>=0) lector.readAsDataURL(f); else lector.readAsText(f);
+}); }catch(e){}
+try{ document.getElementById("entrada").addEventListener("keydown",function(e){ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); hablar(); } }); }catch(e){}
+try{ renderLista(); renderArchivos(); }catch(e){}
+</script>
+</body>
+</html>
