@@ -1,8 +1,9 @@
 {
   "name": "IAgus",
   "short_name": "IAgus",
-  "start_url": "IAgus",
-  "scope": "./",
+  "id": "/IAgus/",
+  "start_url": "/IAgus/",
+  "scope": "/IAgus/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#fff6f8",
