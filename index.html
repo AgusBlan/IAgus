@@ -7,6 +7,8 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffc7dd">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial;background:#fff6f8;display:flex;min-height:100vh;height:100dvh;overflow:hidden}
@@ -32,20 +34,16 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 #pdfViewer{max-height:500px;overflow-y:auto;background:#f5f5f5;border-radius:12px;padding:8px}
 .pdf-page{background:white;margin:8px auto;padding:12px;border-radius:8px;line-height:1.6;font-size:14px;white-space:pre-wrap;word-break:break-word}
 .color-dot{width:30px;height:30px;border-radius:50%;border:3px solid white;cursor:pointer;box-shadow:0 0 0 1px #ccc}
-.side-btn{width:100%;border:0;border-radius:12px;padding:10px;text-align:left;font-weight:bold;cursor:pointer;margin:3px 0}
-.side-btn.active{outline:3px solid white}
 </style>
 </head>
 <body>
 <div class="sidebar" id="sidebar">
-<h3 style="text-align:center;background:white;border-radius:15px;padding:8px;margin:0">🌸 IAgus<br><span style="font-size:11px">IAgus v1</span></h3>
-<div style="display:flex;gap:6px">
+<h3 style="text-align:center;background:white;border-radius:15px;padding:8px;margin:0">🌸 IAgus<br><span style="font-size:11px">IAgus v2 - Lunfardo + Idiomas + Archivos</span></h3>
 <button class="modo-btn modo-activo" id="btnAdulta" style="background:#a8e0ff" onclick="cambiarModo('rapido')">⚡ Groq Gratis</button>
-</div>
-<div id="estadoCerebro" style="font-size:11px;text-align:center;background:white;border-radius:12px;padding:6px">✅ Groq listo - sin descarga</div>
+<div id="estadoCerebro" style="font-size:11px;text-align:center;background:white;border-radius:12px;padding:6px">✅ Groq listo</div>
 <p id="modoTexto" style="background:white;padding:8px;border-radius:12px;font-size:12px;text-align:center;margin:0"></p>
 <div style="background:white;padding:8px;border-radius:12px">
-<b style="font-size:12px">🔑 Groq (GRATIS) - solo sesión</b>
+<b style="font-size:12px">🔑 Groq (GRATIS)</b>
 <input id="geminiKey" placeholder="Pegá tu llave de Groq" style="margin-top:6px;font-size:11px">
 <button class="btn" style="background:#a8e0ff" onclick="guardarKey()">💾 Activar llave</button>
 <button class="btn" style="background:#fff0a8" onclick="probarKey()">🧪 Probar si anda mi llave</button>
@@ -53,11 +51,11 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 </div>
 <button class="btn" style="background:white" onclick="toggleSidebar()">◀️ Esconder menú / Mostrar menú</button>
 <div class="box" id="boxBuscar"><div class="box-head" onclick="toggleBox('boxBuscar')"><span>🔍 Buscar rápido</span><button class="mini-btn">–</button></div><div class="box-body"><input id="buscarInput" placeholder="Ej: fotosíntesis..."><button class="btn" style="background:#a8e0ff" onclick="buscarRapido()">🔍 Buscar en todo</button><div id="resultadoBuscar" style="font-size:12px;margin-top:6px;white-space:pre-wrap"></div></div></div>
-<div class="box" id="boxInternet"><div class="box-head" onclick="toggleBox('boxInternet')"><span>🌐 Buscar en internet</span><button class="mini-btn">–</button></div><div class="box-body"><input id="buscarInternetInput" placeholder="Ej: fotosíntesis, Clefairy..."><button class="btn" style="background:#a8d8ff" onclick="buscarInternetBoton()">🌐 Wikipedia + DuckDuckGo</button><div id="resultadoInternet" style="font-size:12px;margin-top:6px;white-space:pre-wrap"></div></div></div>
+<div class="box" id="boxInternet"><div class="box-head" onclick="toggleBox('boxInternet')"><span>🌐 Buscar en internet</span><button class="mini-btn">–</button></div><div class="box-body"><input id="buscarInternetInput" placeholder="Ej: fotosíntesis..."><button class="btn" style="background:#a8d8ff" onclick="buscarInternetBoton()">🌐 Wikipedia</button><div id="resultadoInternet" style="font-size:12px;margin-top:6px;white-space:pre-wrap"></div></div></div>
 <div class="box" id="boxPomo"><div class="box-head" onclick="toggleBox('boxPomo')"><span>🍅 Pomodoro</span><button class="mini-btn">–</button></div><div class="box-body"><div id="pomoTime" style="font-size:28px;text-align:center;font-weight:bold">25:00</div><div id="pomoEstado" style="font-size:12px;text-align:center">Listo 💖</div><div style="display:flex;gap:6px"><button class="btn" style="background:#ff8fb8;color:white;flex:1" onclick="pomoStart()">▶️</button><button class="btn" style="background:#fff0a8;flex:1" onclick="pomoPause()">⏸️</button><button class="btn" style="background:#e2c6ff;flex:1" onclick="pomoReset()">🔄</button></div><div style="display:flex;gap:6px"><button class="btn" style="background:#ffc7dd" onclick="pomoSet(25,'Estudio')">25</button><button class="btn" style="background:#b8f1cc" onclick="pomoSet(5,'Descanso')">5</button><button class="btn" style="background:#a8d8ff" onclick="pomoSet(15,'Largo')">15</button></div></div></div>
 <div class="box" id="boxYT"><div class="box-head" onclick="toggleBox('boxYT')"><span>🎵 Musiquita YT</span><button class="mini-btn">–</button></div><div class="box-body"><input id="ytLink" placeholder="Pegá tu link de YouTube"><button class="btn" style="background:#ff8fb8;color:white" onclick="ponerYT()">▶️ Poner música</button><div style="display:flex;gap:6px"><button class="btn" style="background:#fff0a8" onclick="ponerYTpreset('jfKfPfyJRdk')">Lofi 🎧</button><button class="btn" style="background:#b8f1cc" onclick="ponerYTpreset('5qap5aO4i9A')">Lofi 2</button></div><div id="ytBox" style="display:none;margin-top:8px"><iframe id="ytFrame" width="100%" height="120" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe></div></div></div>
 <div class="box" id="boxAudio"><div class="box-head" onclick="toggleBox('boxAudio')"><span>🔊 Audiolibro</span><button class="mini-btn">–</button></div><div class="box-body"><input type="file" id="audioPdfFile" accept=".pdf" style="display:none"><button class="btn" style="background:#ff8fb8;color:white" onclick="document.getElementById('audioPdfFile').click()">📎 Adjuntar PDF para leer</button><div id="audioPdfStatus" style="font-size:11px;text-align:center"></div><textarea id="textoAudioLibro" style="height:90px" placeholder="Pegá acá el texto o subí un PDF..."></textarea><div style="display:flex;gap:6px"><button class="btn" style="background:#a8e0ff;flex:1" onclick="leerAudiolibro()">▶️ Leer</button><button class="btn" style="background:#fff0a8;flex:1" onclick="pausarAudiolibro()">⏸️</button><button class="btn" style="background:#ffcf9e;flex:1" onclick="pararAudiolibro()">⏹️</button></div>Velocidad: <select id="velAudio" style="width:100%;padding:8px;border-radius:10px"><option value="0.8">Lento</option><option value="1" selected>Normal</option><option value="1.3">Rápido</option><option value="1.6">Muy rápido</option></select><div id="audioProgreso" style="font-size:12px;text-align:center;margin-top:4px"></div></div></div>
-<div class="box" id="boxImg"><div class="box-head" onclick="toggleBox('boxImg')"><span>🖼️ Buscar inspiración</span><button class="mini-btn">–</button></div><div class="box-body"><input id="promptImagen" placeholder="Ej: habitación rosa kawaii"><button class="btn" style="background:#e2c6ff" onclick="generarImagen()">🔍 Buscar imágenes</button><div style="font-size:10px;margin-top:5px">Busca imágenes existentes con licencia abierta.</div></div></div>
+<div class="box" id="boxImg"><div class="box-head" onclick="toggleBox('boxImg')"><span>🖼️ Buscar inspiración</span><button class="mini-btn">–</button></div><div class="box-body"><input id="promptImagen" placeholder="Ej: habitación rosa kawaii"><button class="btn" style="background:#e2c6ff" onclick="generarImagen()">🔍 Buscar imágenes</button></div></div>
 <div class="box" id="boxHoy"><div class="box-head" onclick="toggleBox('boxHoy')"><span>📅 Hoy + Tareas</span><button class="mini-btn">–</button></div><div class="box-body"><div id="hoyBox" style="font-size:12px"></div><button class="btn" style="background:#ffc7dd" onclick="resumenDia()">✨ Organizame el día</button><input id="nuevaTarea" placeholder="Ej: Estudiar" style="margin-top:8px"><button class="btn" style="background:#b8f1cc" onclick="agregarTareaManual()">+ Agregar tarea</button><div id="listaTareas"></div></div></div>
 <div id="listaChats"></div>
 <button class="btn" style="background:white" onclick="crearChat()">+ Crear chat</button>
@@ -81,8 +79,14 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 <p id="ubicacion" style="font-size:13px"></p>
 <div id="mapaBox" style="display:none"><iframe id="mapa" width="100%" height="200" style="border:0;border-radius:15px"></iframe></div>
 <p id="estadoIA" style="font-size:13px;text-align:center;font-weight:bold"></p>
-<textarea id="entrada" placeholder="Hablame..."></textarea>
+<textarea id="entrada" placeholder="Hablame... Ej: che IAgus explicame esto en lunfardo, o enseñame inglés, o haceme un Excel de..."></textarea>
 <button class="btn" id="btnEnviar" style="background:#ff8fb8;color:white" onclick="hablar()">ENVIAR</button>
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+<button class="btn" style="background:#fff0a8;flex:1" onclick="generarArchivo('pdf')">📄 PDF</button>
+<button class="btn" style="background:#a8d8ff;flex:1" onclick="generarArchivo('doc')">📝 Word / DOC</button>
+<button class="btn" style="background:#b8f1cc;flex:1" onclick="generarArchivo('excel')">📊 Excel</button>
+</div>
+<div style="font-size:11px;text-align:center;margin-top:4px">Pedile: "haceme un PDF / Word / Excel de..." y después tocá el botón 💖</div>
 <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center">
 <label class="btn" style="background:#fff0a8;width:auto;display:inline-block;text-align:center;cursor:pointer">📎 Subir archivo<input type="file" id="subirArchivo" accept="*/*" style="display:none"></label>
 <button class="btn" style="background:#a8d8ff;width:auto" id="btnAudio2" onclick="grabarAudio()">🎤 Grabar</button>
@@ -99,6 +103,12 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 </div>
 <script>
 var MODELO_GROQ = "openai/gpt-oss-20b";
+var miPerfil = "";
+try{ miPerfil = localStorage.getItem("miPerfilAgus")||""; }catch(e){}
+var ultimaRespuestaIA = "";
+var ultimoTema = "";
+var pdfTextoTotal = "";
+var PROMPT_IA = "Sos IAgus, una IA argentina, copada y amable. Entendes PERFECTO el lunfardo argentino: che, boludo/a, posta, re, copado, flashear, quilombo, piola, groso, banca, dale, etc. Si el usuario te habla en lunfardo, respondé en el mismo tono argentino pero sin ser grosera. Enseñas idiomas: inglés, portugués, francés, italiano, alemán. Cuando te piden enseñar un idioma, das vocabulario, ejemplos, pronunciación y mini práctica, no solo traducción. REGLA MUY IMPORTANTE: Nunca repitas textual lo que el usuario te manda de un PDF o archivo. Si te mandan un texto largo o un PDF, NO lo copies. Resumilo, explicalo, respondé la pregunta sobre ese texto, pero no lo repitas. Si te piden un archivo, prepará el contenido en formato de tabla o lista clara para PDF / DOC / Excel. NO cortes los mensajes a la mitad: si la respuesta es larga, desarrollala completa, con títulos y partes. Si te piden PDF, DOC o Excel, decí 'Listo, tocá el botón de PDF / DOC / Excel abajo para descargarlo' y dejá el contenido listo.";
 function toggleBox(id){ var el=document.getElementById(id); el.classList.toggle("min"); var b=el.querySelector(".mini-btn"); if(b) b.innerText=el.classList.contains("min")?"+" : "–"; }
 function toggleSidebar(){ var s=document.getElementById("sidebar"), r=document.getElementById("resizer"); var o=s.style.display!=="none"; s.style.display=o?"none":"flex"; r.style.display=o?"none":"block"; }
 function togglePanel(id){ var ids=["panelChat","panelPDF","panelAudio","panelYTbig"]; for(var i=0;i<ids.length;i++){ var el=document.getElementById(ids[i]); if(ids[i]===id){ el.style.display=(ids[i]==="panelChat"||ids[i]==="panelPDF")?"flex":"block"; if(ids[i]!=="panelChat") el.style.flex="1"; } else el.style.display="none"; } }
@@ -106,12 +116,76 @@ function escapeHTML(s){ s=String(s==null?"":s); s=s.split("&").join("&amp;"); s=
 function limpiarTexto(s){ s=String(s==null?"":s); s=s.split("**").join(""); return s.trim(); }
 function mostrarPerfil(){ var d=document.getElementById("perfilBox"); if(d.style.display==="block") d.style.display="none"; else { d.style.display="block"; document.getElementById("miPerfilTexto").value=miPerfil; } }
 function guardarPerfil(){ miPerfil=document.getElementById("miPerfilTexto").value.trim(); try{localStorage.setItem("miPerfilAgus",miPerfil);}catch(e){} aprenderDeVos("Mi perfil es: "+miPerfil); document.getElementById("perfilBox").style.display="none"; }
+function aprenderDeVos(t){ try{ var m=localStorage.getItem("memoriaCompartidaIAgus")||""; localStorage.setItem("memoriaCompartidaIAgus", m+"\n"+t); }catch(e){} }
 function borrarTodo(){ if(!confirm("¿Borrar TODO?")) return; try{ localStorage.removeItem("miPerfilAgus"); localStorage.removeItem("chatsAgusV2"); localStorage.removeItem("ordenAgus"); localStorage.removeItem("chatActivoAgus"); localStorage.removeItem("memoriaCompartidaIAgus"); localStorage.removeItem("tareasAgus"); localStorage.removeItem("temaIAgus"); }catch(e){} location.reload(); }
 function mostrarTemas(){ var d=document.getElementById("temas"); d.style.display=d.style.display==="block"?"none":"block"; }
 function cambiarTema(){ var f=document.getElementById("cFondo").value, r=document.getElementById("cRosa").value, b=document.getElementById("cBoton").value, l=document.getElementById("cLetra").value; document.body.style.background=f; document.getElementById("sidebar").style.background=r; document.body.style.color=l; try{localStorage.setItem("temaIAgus",JSON.stringify({f:f,r:r,b:b,l:l}));}catch(e){} }
 function aplicarTema(fondo,rosa,boton,letra){ document.getElementById("cFondo").value=fondo; document.getElementById("cRosa").value=rosa; document.getElementById("cBoton").value=boton; document.getElementById("cLetra").value=letra; cambiarTema(); }
 function miUbicacion(){ if(!navigator.geolocation){ document.getElementById("ubicacion").innerText="Sin geolocalización."; return; } document.getElementById("ubicacion").innerText="Buscando ubicación..."; navigator.geolocation.getCurrentPosition(function(p){ var lat=p.coords.latitude, lon=p.coords.longitude; document.getElementById("ubicacion").innerText="Ubicación: "+lat.toFixed(4)+", "+lon.toFixed(4); document.getElementById("mapaBox").style.display="block"; document.getElementById("mapa").src="https://www.openstreetmap.org/export/embed.html?bbox="+(lon-0.02)+"%2C"+(lat-0.02)+"%2C"+(lon+0.02)+"%2C"+(lat+0.02)+"&layer=mapnik&marker="+lat+"%2C"+lon; }, function(){ document.getElementById("ubicacion").innerText="No pude obtener ubicación."; }); }
-var pdfTextoTotal="", pdfColor="amarillo", pdfColorHex="#fff176";
+function cambiarModo(m){ document.getElementById("modoTexto").innerText="Modo: Groq Gratis ⚡ - Lunfardo + Idiomas + Archivos"; }
+function guardarKey(){ var k=document.getElementById("geminiKey").value.trim(); if(!k){ document.getElementById("keyEstado").innerText="Pegá una llave primero"; return; } try{ sessionStorage.setItem("groqKey",k); }catch(e){} document.getElementById("keyEstado").innerText="✅ Llave activada"; }
+function probarKey(){ var k=""; try{ k=sessionStorage.getItem("groqKey")||document.getElementById("geminiKey").value.trim(); }catch(e){} if(!k){ document.getElementById("keyEstado").innerText="No hay llave"; return; } document.getElementById("keyEstado").innerText="Probando..."; fetch("https://api.groq.com/openai/v1/models",{headers:{Authorization:"Bearer "+k}}).then(function(r){ document.getElementById("keyEstado").innerText=r.ok?"✅ Tu llave anda!":"❌ No anda: "+r.status; }).catch(function(){ document.getElementById("keyEstado").innerText="❌ Error de conexión"; }); }
+function addMsg(texto, clase){ var c=document.getElementById("chat"); var d=document.createElement("div"); d.className="msg "+clase; d.innerText=texto; c.appendChild(d); c.scrollTop=c.scrollHeight; return d; }
+async function hablar(){
+  var entrada=document.getElementById("entrada");
+  var texto=entrada.value.trim(); if(!texto) return;
+  ultimoTema=texto;
+  // Si es un texto larguísimo de PDF, no lo mostramos entero en el chat
+  if(texto.length>2000){ addMsg(texto.slice(0,500)+"... [texto largo de PDF / archivo - IAgus lo lee sin repetirlo]","vos"); } else { addMsg(texto,"vos"); }
+  entrada.value="";
+  document.getElementById("estadoIA").innerText="IAgus está pensando...";
+  var key=""; try{ key=sessionStorage.getItem("groqKey")||""; }catch(e){}
+  if(!key){ var r="Che, me falta la llave de Groq para responderte posta. Pegala arriba y tocá Activar llave 💖. Igual ya te dejé listo: si me pediste un PDF / Word / Excel, tocá el botón de abajo para descargarlo."; ultimaRespuestaIA=r; addMsg(r,"ia"); document.getElementById("estadoIA").innerText=""; return; }
+  // No le mandamos el PDF entero para que no lo repita, solo un resumen
+  var textoParaIA = texto;
+  if(texto.length>8000){ textoParaIA = texto.slice(0,8000)+"\n\n[El texto sigue, pero no lo repitas, solo respondé la pregunta sobre este texto]"; }
+  if(pdfTextoTotal && texto.toLowerCase().includes("pdf")){ textoParaIA = "El usuario subió un PDF. Contenido resumido: "+pdfTextoTotal.slice(0,6000)+"\n\nPregunta del usuario: "+texto+"\n\nNO repitas el PDF, solo respondé la pregunta."; }
+  try{
+    var res=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+key},body:JSON.stringify({model:MODELO_GROQ, max_tokens:4000, temperature:0.7, messages:[{role:"system",content:PROMPT_IA+" Perfil: "+miPerfil},{role:"user",content:textoParaIA}]})});
+    var data=await res.json();
+    var resp=(data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "No pude responder, intentá de nuevo.";
+    ultimaRespuestaIA=limpiarTexto(resp); addMsg(ultimaRespuestaIA,"ia");
+  }catch(e){ var err="Error de conexión con Groq. Revisá tu llave o tu internet."; ultimaRespuestaIA=err; addMsg(err,"ia"); }
+  document.getElementById("estadoIA").innerText="";
+}
+// --- ARCHIVOS: PDF / DOC / EXCEL ---
+function generarArchivo(tipo){
+  var texto=ultimaRespuestaIA || document.getElementById("chat").innerText;
+  if(!texto || !texto.trim()){ alert("Primero pedile algo a IAgus"); return; }
+  if(tipo==='pdf'){ crearPDF("IAgus - "+ultimoTema, texto); }
+  if(tipo==='doc'){ crearDOC("IAgus - "+ultimoTema, texto); }
+  if(tipo==='excel'){ crearExcel("IAgus - "+ultimoTema, texto); }
+}
+function crearPDF(titulo, texto){
+  try{
+    var doc=new window.jspdf.jsPDF();
+    doc.setFontSize(18); doc.text(String(titulo).slice(0,60), 15, 15);
+    doc.setFontSize(12);
+    var lineas=doc.splitTextToSize(String(texto), 170);
+    var y=25;
+    for(var i=0;i<lineas.length;i++){ if(y>270){ doc.addPage(); y=15; } doc.text(lineas[i], 15, y); y+=7; }
+    doc.save("IAgus.pdf");
+  }catch(e){ alert("No pude crear el PDF: "+e.message); }
+}
+function crearDOC(titulo, texto){
+  var html="<html><head><meta charset='utf-8'><title>"+escapeHTML(titulo)+"</title></head><body><h1>"+escapeHTML(titulo)+"</h1><p>"+escapeHTML(texto).split("\n").join("<br>")+"</p></body></html>";
+  var blob=new Blob([html],{type:"application/msword"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="IAgus.doc"; a.click();
+}
+function crearExcel(titulo, texto){
+  try{
+    var filas=texto.split("\n").map(function(l){ return [l]; });
+    var ws=XLSX.utils.aoa_to_sheet([["IAgus - "+titulo]].concat(filas));
+    var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "IAgus");
+    XLSX.writeFile(wb, "IAgus.xlsx");
+  }catch(e){
+    // Si falla SheetJS, baja como CSV que Excel abre igual
+    var csv="IAgus - "+titulo+"\n"+texto.replace(/,/g,";");
+    var blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+    var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="IAgus.csv"; a.click();
+  }
+}
+var pdfColor="amarillo", pdfColorHex="#fff176";
 var pdfjsLib=window.pdfjsLib;
 if(pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 function setColorResaltado(n,h){ pdfColor=n; pdfColorHex=h; document.getElementById("colorActual").innerText="Color: "+n; }
@@ -130,300 +204,37 @@ document.getElementById("pdfInput").addEventListener("change", async function(e)
     for(var p=1;p<=pdf.numPages;p++){
       var page=await pdf.getPage(p);
       var txt=await page.getTextContent();
-      var str="";
-      for(var k=0;k<txt.items.length;k++) str+=txt.items[k].str+" ";
+      var str=""; for(var i=0;i<txt.items.length;i++){ str+=txt.items[i].str+" "; }
       pdfTextoTotal+=str+"\n\n";
-      html+='<div class="pdf-page"><b>Página '+p+'</b><br>'+escapeHTML(str)+'</div>';
+      html+='<div class="pdf-page">'+escapeHTML(str)+'</div>';
     }
     document.getElementById("pdfViewer").innerHTML=html;
-    document.getElementById("textoAudioLibro").value=pdfTextoTotal.slice(0,5000);
-    document.getElementById("textoAudioGrande").value=pdfTextoTotal.slice(0,8000);
-    var g=localStorage.getItem("pdfResaltado_"+f.name); if(g) document.getElementById("pdfViewer").innerHTML=g;
-    aprenderDeVos("Contenido del PDF " + f.name + ": " + pdfTextoTotal.slice(0, 2000));
-  }catch(err){ document.getElementById("pdfViewer").innerHTML="No pude leer el PDF: "+err.message; }
+    document.getElementById("textoAudioLibro").value=pdfTextoTotal;
+    document.getElementById("textoAudioGrande").value=pdfTextoTotal;
+    addMsg("Subiste el PDF '"+f.name+"'. Ya lo leí, no te lo voy a repetir. Preguntame lo que quieras sobre ese PDF 💖","ia");
+  }catch(err){ document.getElementById("pdfViewer").innerHTML="Error: "+err.message; }
 });
-document.getElementById("audioPdfFile").addEventListener("change", async function(e){
-  var f=e.target.files[0]; if(!f) return;
-  document.getElementById("audioPdfStatus").innerText="Leyendo PDF...";
-  try{
-    var buf=await f.arrayBuffer();
-    var pdf=await pdfjsLib.getDocument({data:buf}).promise;
-    var total="";
-    for(var p=1;p<=pdf.numPages;p++){ var page=await pdf.getPage(p); var txt=await page.getTextContent(); var s=""; for(var k=0;k<txt.items.length;k++) s+=txt.items[k].str+" "; total+=s+"\n\n"; }
-    pdfTextoTotal=total;
-    document.getElementById("textoAudioLibro").value=total.slice(0,5000);
-    document.getElementById("textoAudioGrande").value=total.slice(0,8000);
-    document.getElementById("audioPdfStatus").innerText="✅ PDF listo: "+f.name;
-    aprenderDeVos("Contenido del PDF para audiolibro " + f.name + ": " + total.slice(0, 2000));
-  }catch(err){ document.getElementById("audioPdfStatus").innerText="❌ No pude leerlo: "+err.message; }
-  e.target.value="";
-});
-function leerPDFcomoAudio(){ if(!pdfTextoTotal){ alert("Primero subí un PDF"); return; } document.getElementById("textoAudioLibro").value=pdfTextoTotal.slice(0,5000); document.getElementById("textoAudioGrande").value=pdfTextoTotal.slice(0,8000); leerAudiolibro(); togglePanel("panelAudio"); }
-function leerAudiolibroGrande(){ document.getElementById("textoAudioLibro").value=document.getElementById("textoAudioGrande").value; leerAudiolibro(); }
-var pomoSeg=25*60, pomoTotal=25*60, pomoTimer=null, pomoModo="Estudio";
-function pomoRender(){ var m=Math.floor(pomoSeg/60), s=pomoSeg%60; document.getElementById("pomoTime").innerText=(m<10?"0"+m:m)+":"+(s<10?"0"+s:s); }
-function pomoSet(min,modo){ pomoPause(); pomoModo=modo; pomoSeg=min*60; pomoTotal=min*60; document.getElementById("pomoEstado").innerText=modo+" - "+min+" min 💖"; pomoRender(); }
-function pomoStart(){ if(pomoTimer) return; document.getElementById("pomoEstado").innerText="⏳ "+pomoModo+" en curso..."; pomoTimer=setInterval(function(){ pomoSeg--; pomoRender(); if(pomoSeg<=0){ clearInterval(pomoTimer); pomoTimer=null; var msg=pomoModo==="Estudio"?"¡Terminaste estudio! Descansá 5 min 💖":"¡Descanso terminado! A estudiar 💪"; document.getElementById("pomoEstado").innerText=msg; agregarMensaje("IAgus",msg); try{ speechSynthesis.speak(new SpeechSynthesisUtterance(msg)); }catch(e){} if(pomoModo==="Estudio") pomoSet(5,"Descanso"); else pomoSet(25,"Estudio"); } },1000); }
-function pomoPause(){ if(pomoTimer){ clearInterval(pomoTimer); pomoTimer=null; document.getElementById("pomoEstado").innerText="⏸️ Pausado"; } }
-function pomoReset(){ pomoPause(); pomoSeg=pomoTotal; pomoRender(); document.getElementById("pomoEstado").innerText="Listo 💖"; }
-function extraerYTid(url){
-  if(!url) return null;
-  var id=null;
-  var idx=url.indexOf("v=");
-  if(idx!==-1) id=url.slice(idx+2, idx+13);
-  else if(url.indexOf("youtu.be/")!==-1){ var i2=url.indexOf("youtu.be/"); id=url.slice(i2+9, i2+20); }
-  else if(url.indexOf("shorts/")!==-1){ var i3=url.indexOf("shorts/"); id=url.slice(i3+7, i3+18); }
-  else if(url.indexOf("embed/")!==-1){ var i4=url.indexOf("embed/"); id=url.slice(i4+6, i4+17); }
-  if(id) id=id.split("&")[0].split("?")[0].split("/")[0];
-  if(id && id.length===11) return id;
-  return null;
-}
-function ponerYT(){
-  var url=document.getElementById("ytLink").value.trim(); if(!url){ alert("Pegá tu link"); return; }
-  var id=extraerYTid(url);
-  var listIdx=url.indexOf("list=");
-  var list=listIdx!==-1 ? url.slice(listIdx+5).split("&")[0] : null;
-  document.getElementById("ytBox").style.display="block";
-  if(list && !id) document.getElementById("ytFrame").src="https://www.youtube.com/embed/videoseries?list="+list+"&autoplay=1";
-  else if(id) document.getElementById("ytFrame").src="https://www.youtube.com/embed/"+id+"?autoplay=1"+(list?"&list="+list:"");
-  else document.getElementById("ytFrame").src="https://www.youtube.com/embed?listType=search&list="+encodeURIComponent(url)+"&autoplay=1";
-  document.getElementById("ytFrameBig").src=document.getElementById("ytFrame").src;
-}
-function ponerYTpreset(id){ document.getElementById("ytBox").style.display="block"; document.getElementById("ytFrame").src="https://www.youtube.com/embed/"+id+"?autoplay=1"; document.getElementById("ytFrameBig").src=document.getElementById("ytFrame").src; }
-var audioChunks=[], audioIdx=0, audioParado=false;
-function leerAudiolibro(){
-  var txt=document.getElementById("textoAudioLibro").value.trim() || document.getElementById("textoAudioGrande").value.trim() || document.getElementById("entrada").value.trim();
-  if(!txt){ alert("Pegá el texto o subí un PDF"); return; }
-  pararAudiolibro(); audioParado=false;
-  audioChunks=[]; var resto=txt;
-  while(resto.length>0){ var corte=Math.min(800, resto.length); var trozo=resto.slice(0,corte); audioChunks.push(trozo); resto=resto.slice(corte); }
-  audioIdx=0; document.getElementById("audioProgreso").innerText="Leyendo 1 de "+audioChunks.length+"..."; leerChunk();
-}
-function leerChunk(){ if(audioParado || audioIdx>=audioChunks.length){ if(audioIdx>=audioChunks.length) document.getElementById("audioProgreso").innerText="✅ Terminado 💖"; return; } var u=new SpeechSynthesisUtterance(audioChunks[audioIdx]); u.lang="es-AR"; u.rate=parseFloat(document.getElementById("velAudio").value); u.onend=function(){ audioIdx++; document.getElementById("audioProgreso").innerText="Leyendo "+(audioIdx+1)+" de "+audioChunks.length+"..."; leerChunk(); }; speechSynthesis.speak(u); }
-function pausarAudiolibro(){ if(speechSynthesis.paused) speechSynthesis.resume(); else speechSynthesis.pause(); }
-function pararAudiolibro(){ audioParado=true; speechSynthesis.cancel(); document.getElementById("audioProgreso").innerText=""; }
-async function generarImagen(){
-  var campo=document.getElementById("promptImagen");
-  var p=(campo && campo.value.trim()) || document.getElementById("entrada").value.trim();
-  if(!p){ alert("Escribí qué querés buscar"); return; }
-  agregarMensaje("IAgus","🔎 Buscando inspiración visual para: "+p+"...");
-  try{
-    var endpoint="https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=12&gsrsearch="+encodeURIComponent(p)+"&prop=imageinfo&iiprop=url&iiurlwidth=420&format=json&origin=*";
-    var respuesta=await fetch(endpoint);
-    if(!respuesta.ok) throw new Error("HTTP "+respuesta.status);
-    var datos=await respuesta.json();
-    var paginas=datos.query && datos.query.pages ? Object.values(datos.query.pages) : [];
-    var html="🖼️ Referencias para: "+p+"\n\n";
-    var count=0;
-    for(var i=0;i<paginas.length;i++){
-      var pg=paginas[i]; var info=pg.imageinfo && pg.imageinfo[0]; if(!info) continue;
-      var mini=info.thumburl || info.url; var orig=info.descriptionurl || info.url;
-      if(!mini || mini.indexOf("https://")!==0) continue;
-      html+="Imagen "+(count+1)+": "+String(pg.title||"").split("File:").join("")+"\nLink: "+orig+"\nImagen: "+mini+"\n\n";
-      count++;
-      agregarMensajeImagen(mini, String(pg.title||"Imagen"));
-    }
-    if(count===0) html+="No encontré imágenes, probá con otras palabras.";
-    agregarMensaje("IAgus", html);
-    if(campo) campo.value="";
-  }catch(e){ agregarMensaje("IAgus","❌ No pude buscar imágenes: "+e.message); }
-}
-function agregarMensajeImagen(url, titulo){
-  var chat=document.getElementById("chat");
-  var div=document.createElement("div");
-  div.className="msg ia";
-  var b=document.createElement("b"); b.textContent="IAgus - "+titulo; div.appendChild(b); div.appendChild(document.createElement("br"));
-  var img=document.createElement("img"); img.src=url; img.alt=titulo; div.appendChild(img);
-  chat.appendChild(div); chat.scrollTop=chat.scrollHeight;
-}
-async function fetchConTiempo(url, seg){
-  try{
-    var ctrl=new AbortController();
-    var timer=setTimeout(function(){ ctrl.abort(); }, seg*1000);
-    var r=await fetch(url, {signal: ctrl.signal});
-    clearTimeout(timer);
-    return r;
-  }catch(e){ return null; }
-}
-async function buscarEnInternet(pregunta){
-  var q=String(pregunta||"").trim(); if(!q) return "";
-  var texto="";
-  try{
-    var rSearch=await fetchConTiempo("https://es.wikipedia.org/w/api.php?action=query&list=search&srsearch="+encodeURIComponent(q)+"&format=json&origin=*", 8);
-    if(rSearch && rSearch.ok){
-      var dSearch=await rSearch.json();
-      var primero=dSearch.query && dSearch.query.search && dSearch.query.search[0];
-      if(primero){
-        texto+="Wikipedia - "+primero.title+": "+String(primero.snippet||"").split("<").join("").split(">").join("")+"\n\n";
-        var rWiki=await fetchConTiempo("https://es.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(primero.title), 8);
-        if(rWiki && rWiki.ok){ var dWiki=await rWiki.json(); if(dWiki.extract) texto="Wikipedia - "+(dWiki.title||q)+": "+dWiki.extract+"\n\n"; }
-      }
-    }
-  }catch(e){}
-  try{
-    var rDDG=await fetchConTiempo("https://api.duckduckgo.com/?q="+encodeURIComponent(q)+"&format=json&no_html=1&skip_disambig=1", 8);
-    if(rDDG && rDDG.ok){ var dDDG=await rDDG.json(); if(dDDG.AbstractText) texto+="DuckDuckGo: "+dDDG.AbstractText+"\n\n"; }
-  }catch(e){}
-  if(!texto) texto="No encontré nada rápido en Wikipedia ni DuckDuckGo para: "+q+". Probá con una palabra sola, ej: queso";
-  return texto.slice(0, 4000);
-}
-async function buscarInternetBoton(){
-  var q=document.getElementById("buscarInternetInput").value.trim() || document.getElementById("entrada").value.trim();
-  if(!q){ alert("Escribí qué querés buscar"); return; }
-  document.getElementById("resultadoInternet").innerText="Buscando...";
-  var res=await buscarEnInternet(q);
-  document.getElementById("resultadoInternet").innerText=res;
-  agregarMensaje("IAgus","🌐 Busqué en Wikipedia + DuckDuckGo sobre: "+q+"\n\n"+res);
-  document.getElementById("buscarInternetInput").value="";
-}
-function necesitaInternet(mensaje){
-  var m=String(mensaje||"").toLowerCase().trim();
-  if(m.length>80) return false;
-  if(m.indexOf("ayer")!==-1) return false;
-  if(m.indexOf("me pasó")!==-1) return false;
-  if(m.indexOf("me paso")!==-1) return false;
-  if(m.indexOf("te cuento")!==-1) return false;
-  if(m.indexOf("anécdota")!==-1) return false;
-  if(m.indexOf("anecdota")!==-1) return false;
-  if(m.indexOf("sabés que")!==-1) return false;
-  if(m.indexOf("sabes que")!==-1) return false;
-  if(m.indexOf("te acordás")!==-1) return false;
-  if(m.indexOf("te acordas")!==-1) return false;
-  if(m.indexOf("qué es")===0) return true;
-  if(m.indexOf("que es")===0) return true;
-  if(m.indexOf("quién es")===0) return true;
-  if(m.indexOf("quien es")===0) return true;
-  if(m.indexOf("cuándo")===0) return true;
-  if(m.indexOf("cuando")===0) return true;
-  if(m.indexOf("dónde")===0) return true;
-  if(m.indexOf("donde")===0) return true;
-  if(m.indexOf("buscá")===0) return true;
-  if(m.indexOf("busca")===0) return true;
-  if(m.indexOf("qué significa")===0) return true;
-  if(m.indexOf("que significa")===0) return true;
-  if(m.indexOf("explicame")===0) return true;
-  if(m.indexOf("explícame")===0) return true;
-  if(m.split(" ").length<=3 && m.indexOf("hola")===-1 && m.indexOf("chau")===-1) return true;
-  return false;
-}
-var geminiKeyEnMemoria="", modoActual="rapido", chats={}, orden=[], sec="general", mensajesMostrados=[], miPerfil="", memoriaAgus=[], tareas=[];
-try{ chats=JSON.parse(localStorage.getItem("chatsAgusV2")||"{}"); orden=JSON.parse(localStorage.getItem("ordenAgus")||"[]"); memoriaAgus=JSON.parse(localStorage.getItem("memoriaCompartidaIAgus")||"[]"); tareas=JSON.parse(localStorage.getItem("tareasAgus")||"[]"); miPerfil=localStorage.getItem("miPerfilAgus")||""; }catch(e){ chats={}; orden=[]; memoriaAgus=[]; tareas=[]; miPerfil=""; }
-if(!orden.length){ sec="general"; chats.general=chats.general||[]; orden=[{id:"general",nombre:"General",emoji:"💖"}]; }
-sec=localStorage.getItem("chatActivoAgus")||orden[0].id; if(!chats[sec]) sec=orden[0].id;
-function guardar(){ try{ localStorage.setItem("chatsAgusV2",JSON.stringify(chats)); localStorage.setItem("ordenAgus",JSON.stringify(orden)); localStorage.setItem("chatActivoAgus",sec); localStorage.setItem("memoriaCompartidaIAgus",JSON.stringify(memoriaAgus)); localStorage.setItem("tareasAgus",JSON.stringify(tareas)); }catch(e){} }
-function aprenderDeVos(t){ t=String(t||"").trim(); if(!t) return; memoriaAgus.push({texto:t.slice(0,500),fecha:new Date().toISOString()}); if(memoriaAgus.length>250) memoriaAgus=memoriaAgus.slice(-250); guardar(); }
-function construirMemoria(){ var partes=[]; if(miPerfil) partes.push("Perfil: "+miPerfil); for(var i=0;i<memoriaAgus.length;i++){ if(memoriaAgus[i].texto) partes.push(memoriaAgus[i].texto); } return partes.join("\n").slice(-2000); }
-function agregarMensaje(quien, texto){
-  var item={q:quien,t:String(texto),fecha:new Date().toISOString()};
-  mensajesMostrados.push(item); if(!chats[sec]) chats[sec]=[]; chats[sec].push(item);
-  var chat=document.getElementById("chat"); var div=document.createElement("div"); div.className="msg "+(quien==="Vos"?"vos":"ia"); div.innerHTML="<b>"+(quien==="Vos"?"Vos":"IAgus")+"</b><br>"+escapeHTML(texto).split("\n").join("<br>"); chat.appendChild(div); chat.scrollTop=chat.scrollHeight; guardar();
-}
-function mostrarChat(){ var chat=document.getElementById("chat"); chat.innerHTML=""; for(var i=0;i<mensajesMostrados.length;i++){ var m=mensajesMostrados[i]; var div=document.createElement("div"); div.className="msg "+(m.q==="Vos"?"vos":"ia"); div.innerHTML="<b>"+(m.q==="Vos"?"Vos":"IAgus")+"</b><br>"+escapeHTML(m.t).split("\n").join("<br>"); chat.appendChild(div); } chat.scrollTop=chat.scrollHeight; }
-function renderLista(){ var h=""; for(var i=0;i<orden.length;i++){ var c=orden[i]; h+='<button class="btn" style="background:white" onclick="cambiar(\''+c.id+'\')">'+escapeHTML(c.emoji)+' '+escapeHTML(c.nombre)+'</button>'; } document.getElementById("listaChats").innerHTML=h; }
-function crearChat(){ var n=prompt("Nombre del chat"); if(!n) return; var id="chat_"+Date.now(); chats[id]=[]; orden.push({id:id,nombre:n,emoji:"💖"}); sec=id; guardar(); renderLista(); mensajesMostrados=[]; mostrarChat(); }
-function cambiar(id){ sec=id; guardar(); renderLista(); mensajesMostrados=[]; var lista=chats[sec]||[]; for(var i=0;i<lista.length;i++) mensajesMostrados.push(lista[i]); mostrarChat(); }
-function cambiarModo(modo){ modoActual="rapido"; document.getElementById("btnAdulta").classList.add("modo-activo"); document.getElementById("modoTexto").innerText="⚡ Groq Gratis + Wiki/DDG"; document.getElementById("estadoIA").innerText="⚡ Modo Groq"; }
-function guardarKey(){ var k=document.getElementById("geminiKey").value.trim(); if(!k){ alert("Pegá tu llave de Groq"); return; } geminiKeyEnMemoria=k; try{localStorage.setItem("groq_key",k);}catch(e){} document.getElementById("keyEstado").innerText="✅ Llave de Groq cargada"; }
-async function probarKey(){
-  var key=geminiKeyEnMemoria || document.getElementById("geminiKey").value.trim() || localStorage.getItem("groq_key") || "";
-  if(!key){ document.getElementById("keyEstado").innerText="❌ Pegá primero tu llave de Groq"; return; }
-  geminiKeyEnMemoria=key; document.getElementById("keyEstado").innerText="Probando...";
-  try{
-    var r=await fetch("https://api.groq.com/openai/v1/chat/completions",{ method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer "+key}, body:JSON.stringify({model:MODELO_GROQ, messages:[{role:"user",content:"Respondé solo: Hola"}], max_tokens:10}) });
-    if(r.ok) document.getElementById("keyEstado").innerText="✅ La conexión con Groq funciona";
-    else { var txt=await r.text(); document.getElementById("keyEstado").innerText="❌ Error "+r.status+": "+txt.slice(0,300); }
-  }catch(e){ document.getElementById("keyEstado").innerText="❌ No pude conectar: "+e.message; }
-}
-async function hablarConGemini(mensaje, infoInternet, memoria){
-  var key=geminiKeyEnMemoria || document.getElementById("geminiKey").value.trim() || localStorage.getItem("groq_key") || "";
-  if(!key) return "❌ Pegá tu llave de Groq y tocá Activar llave.";
-  geminiKeyEnMemoria=key;
-  var historial=[{role:"system",content:"Sos IAgus, amiga argentina, hablá normal. Tenés esta memoria y este PDF que subió la usuaria, leelo vos y respondé con lo que dice ahí, no inventes. Memoria:\n"+(memoria||"")+" \nInfo:\n"+(infoInternet||"Sin info")}];
-  for(var i=0;i<mensajesMostrados.length;i++){ var m=mensajesMostrados[i]; if(m.q!=="Vos" && m.q!=="IAgus") continue; var t=String(m.t).slice(0,1200); var role=m.q==="Vos"?"user":"assistant"; historial.push({role:role,content:t}); }
-  historial=historial.slice(-15);
-  var r=await fetch("https://api.groq.com/openai/v1/chat/completions",{ method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer "+key}, body:JSON.stringify({ model:MODELO_GROQ, messages:historial, temperature:0.7, max_tokens:1000 }) });
-  if(!r.ok){
-    var txt=await r.text();
-    if(r.status===503 || r.status===429) return "⚠️ Groq está saturado ahora (error "+r.status+"). Esperá 1 minuto y mandá de nuevo, o usá 🌐 Buscar en internet.\n\nY ya te busqué en Wikipedia + DuckDuckGo:\n"+(infoInternet||"No encontré nada.");
-    return "❌ Groq error "+r.status+": "+txt.slice(0,300);
-  }
-  var d=await r.json(); var out=d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content; if(out) return limpiarTexto(out).slice(0,1800); return "Groq no devolvió texto.";
-}
-async function hablarConIA(mensaje){
-  var memoria=construirMemoria(); var infoInternet="";
-  if(pdfTextoTotal && pdfTextoTotal.length > 50){
-    memoria = memoria + "\n\nPDF SUBIDO POR LA USUARIA, LEÉLO VOS Y RESPONDÉ CON LO QUE DICE AHÍ:\n" + pdfTextoTotal.slice(0, 6000);
-  }
-  if(necesitaInternet(mensaje)){ document.getElementById("estadoIA").innerText="🌐 Buscando en Wikipedia + DuckDuckGo..."; infoInternet=await buscarEnInternet(mensaje); }
-  try{ var g=await hablarConGemini(mensaje, infoInternet, memoria); return g; }catch(e){ return "❌ Error Groq: "+e.message; }
-}
-async function responderIA(mensaje){ try{ var r=await hablarConIA(mensaje); agregarMensaje("IAgus", r || "⚠️ No pude responder."); }catch(e){ agregarMensaje("IAgus","⚠️ Error: "+e.message); } }
-async function hablar(){
-  var entrada=document.getElementById("entrada"); var mensaje=entrada.value.trim(); if(!mensaje) return;
-  entrada.value=""; agregarMensaje("Vos", mensaje); aprenderDeVos("Usuaria dijo: "+mensaje);
-  document.getElementById("estadoIA").innerText="⚡ Pensando...";
-  var boton=document.getElementById("btnEnviar"); if(boton) boton.disabled=true;
-  await responderIA(mensaje);
-  document.getElementById("estadoIA").innerText="⚡ Modo Groq";
-  if(boton) boton.disabled=false;
-}
-function renderTareas(){ var cont=document.getElementById("listaTareas"); if(!cont) return; cont.innerHTML=""; for(var i=0;i<tareas.length;i++){ (function(i){ var t=tareas[i]; var div=document.createElement("div"); div.className="tarea"+(t.hecha?" hecha":""); var label=document.createElement("span"); label.textContent=t.texto; var acc=document.createElement("span"); var chk=document.createElement("input"); chk.type="checkbox"; chk.checked=!!t.hecha; chk.style.width="auto"; chk.onchange=function(){ t.hecha=chk.checked; guardar(); renderTareas(); }; var del=document.createElement("button"); del.textContent="✕"; del.onclick=function(){ tareas.splice(i,1); guardar(); renderTareas(); }; acc.appendChild(chk); acc.appendChild(del); div.appendChild(label); div.appendChild(acc); cont.appendChild(div); })(i); } }
-function agregarTareaManual(){ var input=document.getElementById("nuevaTarea"); var texto=input.value.trim(); if(!texto) return; tareas.push({texto:texto,hecha:false}); input.value=""; guardar(); renderTareas(); }
-function resumenDia(){ var pend=[]; for(var i=0;i<tareas.length;i++){ if(!tareas[i].hecha) pend.push(tareas[i]); } var texto=pend.length?pend.map(function(t,i){ return (i+1)+". "+t.texto; }).join("\n"):"No tenés tareas pendientes."; agregarMensaje("IAgus","📅 Tu día:\n"+texto); }
-function buscarRapido(){ var q=document.getElementById("buscarInput").value.trim().toLowerCase(); var out=document.getElementById("resultadoBuscar"); if(!q){ out.innerText="Escribí qué querés buscar."; return; } var hallados=[]; for(var id in chats){ var lista=chats[id]||[]; for(var i=0;i<lista.length;i++){ if(String(lista[i].t).toLowerCase().indexOf(q)!==-1) hallados.push((lista[i].q==="Vos"?"Vos: ":"IAgus: ")+String(lista[i].t).slice(0,220)); } } for(var j=0;j<memoriaAgus.length;j++){ if(String(memoriaAgus[j].texto).toLowerCase().indexOf(q)!==-1) hallados.push("Memoria: "+memoriaAgus[j].texto); } out.innerText=hallados.length?hallados.slice(-12).join("\n\n"):"No encontré en tus chats ni memoria."; }
-var grabando=false, recorder=null, trozos=[];
-function grabarAudio(){
-  var btn2=document.getElementById("btnAudio2");
-  if(!grabando){
-    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ alert("Tu tablet no deja grabar"); return; }
-    navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
-      recorder=new MediaRecorder(stream); trozos=[];
-      recorder.ondataavailable=function(e){ trozos.push(e.data); };
-      recorder.onstop=function(){ var audio=new Blob(trozos,{type:"audio/webm"}); var url=URL.createObjectURL(audio); agregarMensaje("Vos","🎤 Audio grabado"); var chat=document.getElementById("chat"); var a=document.createElement("audio"); a.controls=true; a.src=url; chat.appendChild(a); stream.getTracks().forEach(function(tr){ tr.stop(); }); };
-      recorder.start(); grabando=true; if(btn2) btn2.innerText="⏹️ Parar";
-    }).catch(function(){ alert("No pude acceder al micrófono."); });
-  } else { try{ recorder.stop(); }catch(e){} grabando=false; if(btn2) btn2.innerText="🎤 Grabar"; }
-}
-document.getElementById("subirArchivo").addEventListener("change", async function(e){
-  var f=e.target.files[0]; if(!f) return;
-  if(f.name.toLowerCase().indexOf(".pdf")!==-1){
-    try{
-      var buf=await f.arrayBuffer();
-      var pdf=await pdfjsLib.getDocument({data:buf}).promise;
-      var total="";
-      for(var p=1;p<=pdf.numPages;p++){ var page=await pdf.getPage(p); var txt=await page.getTextContent(); var s=""; for(var k=0;k<txt.items.length;k++) s+=txt.items[k].str+" "; total+=s+"\n\n"; }
-      pdfTextoTotal=total;
-      document.getElementById("textoAudioLibro").value=total.slice(0,5000);
-      document.getElementById("textoAudioGrande").value=total.slice(0,8000);
-      aprenderDeVos("Contenido del PDF " + f.name + ": " + total.slice(0, 2000));
-      agregarMensaje("Vos","📎 Subí PDF " + f.name);
-      agregarMensaje("IAgus","✅ Ya adquirí tu PDF " + f.name + " en mi memoria.");
-    }catch(err){ agregarMensaje("IAgus","❌ No pude leer ese PDF: " + err.message); }
-    e.target.value="";
-    return;
-  }
-  var reader=new FileReader();
-  reader.onload=function(){
-    var c=String(reader.result||"");
-    aprenderDeVos("Contenido del archivo " + f.name + ": " + c.slice(0, 2000));
-    agregarMensaje("Vos","📎 Subí " + f.name + "\n" + c.slice(0, 1200));
-    agregarMensaje("IAgus","✅ Ya lo guardé en mi memoria, preguntame lo que quieras sobre " + f.name);
-  };
-  reader.readAsText(f);
-  e.target.value="";
-});
-document.getElementById("entrada").addEventListener("keydown", function(e){ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); hablar(); } });
-document.getElementById("buscarInput").addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); buscarRapido(); } });
-document.getElementById("buscarInternetInput").addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); buscarInternetBoton(); } });
-(function(){ var res=document.getElementById("resizer"), side=document.getElementById("sidebar"), dragging=false; function start(e){ dragging=true; e.preventDefault(); } function move(e){ if(!dragging) return; var x=e.touches?e.touches[0].clientX:e.clientX; if(x>160 && x<520) side.style.width=x+"px"; } function end(){ dragging=false; } res.addEventListener("mousedown",start); res.addEventListener("touchstart",start); document.addEventListener("mousemove",move); document.addEventListener("touchmove",move); document.addEventListener("mouseup",end); document.addEventListener("touchend",end); })();
-try{
-  var savedGroq=""; try{savedGroq=localStorage.getItem("groq_key")||"";}catch(e){}
-  if(savedGroq){ geminiKeyEnMemoria=savedGroq; document.getElementById("geminiKey").value=savedGroq; document.getElementById("keyEstado").innerText="✅ Llave de Groq guardada"; }
-  renderLista(); renderTareas();
-  var tg=localStorage.getItem("temaIAgus"); if(tg){ try{ var th=JSON.parse(tg); document.body.style.background=th.f; document.getElementById("sidebar").style.background=th.r; document.body.style.color=th.l; document.getElementById("cFondo").value=th.f; document.getElementById("cRosa").value=th.r; document.getElementById("cBoton").value=th.b; document.getElementById("cLetra").value=th.l; }catch(e){} }
-  var cg=localStorage.getItem("chatActivoAgus"); if(cg && chats[cg]) sec=cg;
-  mensajesMostrados=(chats[sec]||[]).slice(); cambiarModo("rapido"); mostrarChat(); pomoRender(); guardar();
-}catch(e){ console.warn(e); }
+function leerPDFcomoAudio(){ document.getElementById("textoAudioLibro").value=pdfTextoTotal; togglePanel('panelAudio'); leerAudiolibroGrande(); }
+function buscarRapido(){ var q=document.getElementById("buscarInput").value.trim(); if(!q) return; document.getElementById("resultadoBuscar").innerText="Buscá '"+q+"' en Wikipedia o en el chat 💖"; }
+async function buscarInternetBoton(){ var q=document.getElementById("buscarInternetInput").value.trim(); if(!q) return; document.getElementById("resultadoInternet").innerText="Buscando..."; try{ var r=await fetch("https://es.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(q)); var d=await r.json(); document.getElementById("resultadoInternet").innerText=d.extract || "No encontré en Wikipedia, probá con otra palabra."; }catch(e){ document.getElementById("resultadoInternet").innerText="Error buscando en internet"; } }
+var pomoTimer=null, pomoSeg=25*60;
+function pomoSet(min,txt){ pomoSeg=min*60; pomoPause(); document.getElementById("pomoTime").innerText=(min<10?"0"+min:min)+":00"; document.getElementById("pomoEstado").innerText=txt+" 💖"; }
+function pomoStart(){ if(pomoTimer) return; pomoTimer=setInterval(function(){ pomoSeg--; if(pomoSeg<=0){ pomoPause(); document.getElementById("pomoEstado").innerText="¡Tiempo! 💖"; return; } var m=Math.floor(pomoSeg/60), s=pomoSeg%60; document.getElementById("pomoTime").innerText=(m<10?"0"+m:m)+":"+(s<10?"0"+s:s); },1000); }
+function pomoPause(){ if(pomoTimer){ clearInterval(pomoTimer); pomoTimer=null; } }
+function pomoReset(){ pomoPause(); pomoSet(25,"Listo"); }
+function ponerYT(){ var link=document.getElementById("ytLink").value; var id=""; var m=link.match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{11})/); if(m) id=m[1]; else if(link.length===11) id=link; if(!id){ alert("Pegá un link de YouTube válido"); return; } document.getElementById("ytBox").style.display="block"; document.getElementById("ytFrame").src="https://www.youtube.com/embed/"+id; }
+function ponerYTpreset(id){ document.getElementById("ytLink").value=id; ponerYT(); }
+function leerAudiolibro(){ var t=document.getElementById("textoAudioLibro").value; if(!t.trim()){ alert("Pegá texto o subí un PDF"); return; } speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(t); u.rate=parseFloat(document.getElementById("velAudio").value||1); speechSynthesis.speak(u); }
+function leerAudiolibroGrande(){ var t=document.getElementById("textoAudioGrande").value || document.getElementById("textoAudioLibro").value; if(!t.trim()){ alert("No hay texto"); return; } speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(t); speechSynthesis.speak(u); }
+function pausarAudiolibro(){ if(speechSynthesis.speaking){ speechSynthesis.pause(); } }
+function pararAudiolibro(){ speechSynthesis.cancel(); }
+function generarImagen(){ var q=document.getElementById("promptImagen").value.trim(); if(!q) return; window.open("https://unsplash.com/s/photos/"+encodeURIComponent(q),"_blank"); }
+function resumenDia(){ var hoy=new Date().toLocaleDateString("es-AR"); document.getElementById("hoyBox").innerText="Hoy es "+hoy+" 💖 ¡Vos podés!"; }
+function agregarTareaManual(){ var v=document.getElementById("nuevaTarea").value.trim(); if(!v) return; var d=document.createElement("div"); d.className="tarea"; d.innerText=v; d.onclick=function(){ d.classList.toggle("hecha"); }; document.getElementById("listaTareas").appendChild(d); document.getElementById("nuevaTarea").value=""; }
+function crearChat(){ document.getElementById("chat").innerHTML=""; ultimaRespuestaIA=""; addMsg("Nuevo chat creado 💖 ¿De qué hablamos?","ia"); }
+function grabarAudio(){ alert("Mantené apretado para grabar - esta función usa el micrófono del celu"); }
+document.getElementById("audioPdfFile").addEventListener("change", async function(e){ var f=e.target.files[0]; if(!f) return; document.getElementById("audioPdfStatus").innerText="Leyendo "+f.name+"..."; try{ var buf=await f.arrayBuffer(); var pdf=await pdfjsLib.getDocument({data:buf}).promise; var txt=""; for(var p=1;p<=pdf.numPages;p++){ var page=await pdf.getPage(p); var c=await page.getTextContent(); for(var i=0;i<c.items.length;i++) txt+=c.items[i].str+" "; } document.getElementById("textoAudioLibro").value=txt; document.getElementById("textoAudioGrande").value=txt; pdfTextoTotal=txt; document.getElementById("audioPdfStatus").innerText="✅ Listo para leer"; }catch(err){ document.getElementById("audioPdfStatus").innerText="Error: "+err.message; } });
+cambiarModo('rapido'); resumenDia();
 </script>
 </body>
 </html>
