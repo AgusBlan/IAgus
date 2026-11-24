@@ -209,7 +209,7 @@ function sanitizarHTML(html){
       });
       if(tag==="IMG"){
         var srcImagen=attrs.src||"";
-        if(/^https:\/\//i.test(srcImagen) || /^data:image\/(png|jpeg|webp);base64,[STRIPPED].test(srcImagen)){
+        if(srcImagen.startsWith("https://") || (srcImagen.startsWith("data:image/") && srcImagen.includes(";base64,"))){
           n.setAttribute("src",srcImagen);
           n.setAttribute("alt","Imagen generada");
           n.style.maxWidth="100%";
