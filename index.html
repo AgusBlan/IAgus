@@ -224,15 +224,6 @@ function mergeTurns(messages){
   while(out.length&&out[0].role!=="user")out.shift();
   return out.slice(-24);
 }
-function cleanLinks(t){ if(!t) return ""; return String(t).replace(/https?:\/\/[^\s\)\]]+/g,"").replace(/www\.[^\s\)\]]+/g,"").trim(); }
-async function buscarEnTodo(qRaw){
-  let q=String(qRaw||"").toLowerCase().replace(/quien es|quién es|que es|qué es|que significa|quién fue|quien fue/g,"").trim();
-  if(!q) q=qRaw; q=q.charAt(0).toUpperCase()+q.slice(1);
-  let out=[];
-  try{ let r=await fetch("https://es.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(q)); if(r.ok){ let d=await r.json(); if(d.extract) out.push(d.extract.slice(0,700)); } }catch(e){}
-  try{ let r=await fetch("https://api.duckduckgo.com/?q="+encodeURIComponent(q)+"&format=json&no_html=1&skip_disambig=1"); if(r.ok){ let d=await r.json(); if(d.AbstractText) out.push(d.AbstractText.slice(0,700)); if(d.RelatedTopics&&d.RelatedTopics[0]&&d.RelatedTopics[0].Text) out.push(d.RelatedTopics[0].Text.slice(0,600)); } }catch(e){}
-  return out.join("\n\n");
-}
 async function geminiReply(){
   if(!apiKey)throw new Error("Primero activá tu clave de Gemini.");
   const all=currentMessages();
@@ -242,21 +233,17 @@ async function geminiReply(){
   if(!turns.length||turns[turns.length-1].role!=="user")turns.push({role:"user",parts:[{text:last.text.slice(0,2500)}]});
   else turns[turns.length-1].parts[0].text+="\n"+last.text.slice(0,2500);
   const pdfContext=pdfText.trim() ? ("\n\nDOCUMENTO ADJUNTO ("+pdfFileName+"):\n"+pdfText.slice(0,28000)+"\n[Si el documento supera el límite, aclaralo y no inventes el contenido faltante.]") : "";
-  const system="Sos IAgus, una amiga argentina de verdad, que habla fluido como persona por WhatsApp, en argentino, con vos, che, dale, ¿viste?. Hacé preguntas, seguí el tema, acordate de todo lo que hablaron antes en TODOS los chats, contá cosas con tus palabras. No hables como buscador, no digas Según Wikipedia, no des listas secas ni definiciones de diccionario. NUNCA mandes links, NUNCA mandes URLs. No inventes recuerdos. No generes imágenes con IA: si piden imágenes, indicá que usen Buscar como Pinterest, que busca fotos reales ya existentes.\nMEMORIA DE TODOS LOS CHATS Y PASADO:\n"+memoryText()+pdfContext;
-  for(let intento=0;intento<3;intento++){
-    try{
-      const response=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+MODEL+":generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},body:JSON.stringify({systemInstruction:{parts:[{text:system}]},contents:turns,generationConfig:{temperature:.85,maxOutputTokens:1200}})});
-      const data=await response.json().catch(()=>({}));
-      if(response.ok){
-        const parts=data.candidates?.[0]?.content?.parts||[];
-        const answer=parts.map(p=>p.text||"").filter(Boolean).join("\n").trim();
-        if(answer) return cleanLinks(answer);
-      }
-      if(response.status===503){ await new Promise(r=>setTimeout(r,2500)); continue; }
-      throw new Error("Gemini "+response.status+": "+(data.error?.message||"No se pudo completar la solicitud."));
-    }catch(e){ if(intento===2) throw e; await new Promise(r=>setTimeout(r,2000)); }
-  }
-  throw new Error("Gemini está saturado (503), probá en 1 minuto.");
+  const system="Sos IAgus, asistente conversacional útil y claro. Hablás en español argentino natural. Usá el historial y la memoria compartida cuando corresponda. No inventes recuerdos ni afirmes que entrenaste el modelo. No generes imágenes: si piden imágenes, indicá que usen Buscar inspiración, que busca material ya existente.\nMEMORIA COMPARTIDA:\n"+memoryText()+pdfContext;
+  const response=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+MODEL+":generateContent",{
+    method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},
+    body:JSON.stringify({systemInstruction:{parts:[{text:system}]},contents:turns,generationConfig:{temperature:.7,maxOutputTokens:1200}})
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error("Gemini "+response.status+": "+(data.error?.message||"No se pudo completar la solicitud."));
+  const parts=data.candidates?.[0]?.content?.parts||[];
+  const answer=parts.map(p=>p.text||"").filter(Boolean).join("\n").trim();
+  if(!answer)throw new Error(data.promptFeedback?.blockReason||"Gemini no devolvió texto.");
+  return answer;
 }
 async function loadPrivate(){
   if(engine)return;
@@ -274,10 +261,10 @@ async function privateReply(){
   if(!engine)throw new Error("Primero tocá Cerebro Privado y esperá a que termine de cargar.");
   const history=currentMessages().slice(-18).map(m=>({role:m.role==="user"?"user":"assistant",content:m.text.slice(0,1500)}));
   const pdfContext=pdfText.trim() ? ("\n\nDOCUMENTO ADJUNTO ("+pdfFileName+"):\n"+pdfText.slice(0,16000)) : "";
-  const result=await engine.chat.completions.create({messages:[{role:"system",content:"Sos IAgus, una amiga argentina que habla fluido como persona, sin links, sin sonar a buscador. Usá el contexto de todos los chats.\n"+memoryText()+pdfContext}].concat(history),temperature:.85,max_tokens:700});
+  const result=await engine.chat.completions.create({messages:[{role:"system",content:"Sos IAgus, un asistente claro y amable que habla español argentino. Usá el contexto compartido sin inventar recuerdos.\n"+memoryText()+pdfContext}].concat(history),temperature:.7,max_tokens:700});
   const answer=result.choices?.[0]?.message?.content;
   if(!answer)throw new Error("El modelo local no devolvió texto.");
-  return cleanLinks(answer);
+  return answer;
 }
 let sending=false;
 async function sendMessage(){
@@ -288,23 +275,8 @@ async function sendMessage(){
     $("imageQuery").value=text.replace(/buscame|mostrame|una imagen|imagenes|imagen/gi,"").trim()||text;await searchImages();return;
   }
   sending=true;$("send").disabled=true;$("status").textContent=mode==="privado"?"🔒 Pensando en el dispositivo...":"⚡ IAgus está pensando...";
-  try{
-    const answer=mode==="privado"?await privateReply():await geminiReply();
-    addMessage("assistant",answer);remember("IAgus respondió: "+answer.slice(0,220));
-  }catch(e){
-    // FALLBACK COMO ANTES: si Gemini 503, responde igual con DuckDuckGo + Google + Wikipedia + programada
-    try{
-      const todo=await buscarEnTodo(text);
-      if(todo){ addMessage("assistant","Ay, Gemini está saturado ahora, pero te cuento lo que sé 💖\n\n"+cleanLinks(todo).slice(0,900)+"\n\n¿Querés que te lo explique más fácil?"); }
-      else{
-        const ml=text.toLowerCase();
-        if(ml.includes("hola")||ml.includes("como andas")||ml.includes("cómo andás")) addMessage("assistant","¡Holaa! ¿Cómo andás? Yo acá, te extrañaba 💖 Contame, ¿qué andás haciendo?");
-        else if(ml.includes("gracias")) addMessage("assistant","De nada, para eso estoy 💖 ¿Qué más hacemos?");
-        else if(ml.includes("quien sos")||ml.includes("quién sos")) addMessage("assistant","Soy IAgus, tu amiga de siempre 💖 ¿Me contás algo?");
-        else addMessage("assistant","Ay, Gemini está saturado ahora (503), pero acá estoy 💖 Contame más, ¿qué me querías preguntar? Así te ayudo igual.");
-      }
-    }catch(_){ addMessage("assistant","⚠️ "+e.message); }
-  }
+  try{const answer=mode==="privado"?await privateReply():await geminiReply();addMessage("assistant",answer);remember("IAgus respondió: "+answer.slice(0,220));}
+  catch(e){addMessage("assistant","⚠️ "+e.message);}
   finally{sending=false;$("send").disabled=false;$("status").textContent=mode==="privado"?"🔒 Modo Privado":"⚡ Modo Rápido";}
 }
 async function testKey(){
@@ -314,10 +286,8 @@ async function testKey(){
   try{
     const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+MODEL+":generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},body:JSON.stringify({contents:[{parts:[{text:"Respondé solo OK"}]}],generationConfig:{maxOutputTokens:8}})});
     const d=await r.json().catch(()=>({}));
-    if(r.ok) $("keyStatus").textContent="✅ Gemini respondió. La clave funciona y quedó guardada.";
-    else if(r.status===503) $("keyStatus").textContent="✅ Tu clave ANDA, pero el 3.8 está saturado ahora (503). Esperá 1 min.";
-    else if(r.status===400||r.status===403) $("keyStatus").textContent="❌ Tu clave NO anda (Error "+r.status+"). Sacá una nueva en AI Studio.";
-    else $("keyStatus").textContent="❌ Error "+r.status+": "+(d.error?.message||"Error de conexión");
+    if(!r.ok)throw new Error("HTTP "+r.status+": "+(d.error?.message||"Error de conexión"));
+    $("keyStatus").textContent="✅ Gemini respondió. La clave funciona y quedó guardada.";
   }catch(e){$("keyStatus").textContent="❌ "+e.message;}
 }
 async function searchImages(){
