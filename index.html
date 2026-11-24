@@ -52,6 +52,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <button class="modo-btn" id="btnAdulta" style="background:#a8e0ff" onclick="cambiarModo('rapido')">⚡ Rápido</button>
 <button class="modo-btn" id="btnPrivado" style="background:#b8f1cc" onclick="cambiarModo('privado')">🔒 Privado</button>
 </div>
+<button class="btn" style="background:#b8f1cc" onclick="cargarIA()">⬇️ Descargar Cerebro Privado</button>
+<div id="estadoCerebro" style="font-size:11px;text-align:center;background:white;border-radius:12px;padding:6px"></div>
 <p id="modoTexto" style="background:white;padding:8px;border-radius:12px;font-size:12px;text-align:center;margin:0"></p>
 <div style="background:white;padding:8px;border-radius:12px">
 <b style="font-size:12px">🔑 Gemini (llave solo en esta sesión)</b>
@@ -113,8 +115,10 @@ var engine=null, cargando=false;
 async function cargarIA(){
   if(engine){
     document.getElementById("estadoIA").innerText="✅ Privado listo";
+    var e2=document.getElementById("estadoCerebro"); if(e2) e2.innerText="✅ Cerebro Privado ya descargado";
     return;
-  }
+  } cargarIA(){
+  
   if(cargando) return;
   if(!window.isSecureContext || !navigator.gpu){
     document.getElementById("estadoIA").innerText="⚠️ Este navegador/dispositivo no tiene WebGPU disponible. Probá desde GitHub Pages en un navegador compatible.";
@@ -129,7 +133,8 @@ async function cargarIA(){
         document.getElementById("estadoIA").innerText="⬇️ Descargando cerebro Privado: "+Math.round((p.progress||0)*100)+"%";
       }
     });
-    document.getElementById("estadoIA").innerText="✅ Privado listo. Los mensajes se procesan en este dispositivo.";
+        document.getElementById("estadoIA").innerText="✅ Privado listo. Los mensajes se procesan en este dispositivo.";
+        var e3=document.getElementById("estadoCerebro"); if(e3) e3.innerText="✅ Cerebro Privado listo";
   }catch(e){
     console.error(e);
     document.getElementById("estadoIA").innerText="❌ No se pudo cargar el modelo local. Puede faltar memoria o compatibilidad WebGPU.";
