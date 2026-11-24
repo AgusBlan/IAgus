@@ -38,15 +38,15 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 </head>
 <body>
 <div class="sidebar" id="sidebar">
-<h3 style="text-align:center;background:white;border-radius:15px;padding:8px;margin:0">🌸 IAgus<br><span style="font-size:11px">v98 - Grok + sin privado</span></h3>
+<h3 style="text-align:center;background:white;border-radius:15px;padding:8px;margin:0">🌸 IAgus<br><span style="font-size:11px">v99 - Groq Gratis + sin privado</span></h3>
 <div style="display:flex;gap:6px">
-<button class="modo-btn modo-activo" id="btnAdulta" style="background:#a8e0ff" onclick="cambiarModo('rapido')">⚡ Grok</button>
+<button class="modo-btn modo-activo" id="btnAdulta" style="background:#a8e0ff" onclick="cambiarModo('rapido')">⚡ Groq Gratis</button>
 </div>
-<div id="estadoCerebro" style="font-size:11px;text-align:center;background:white;border-radius:12px;padding:6px">✅ Grok listo - sin descarga</div>
+<div id="estadoCerebro" style="font-size:11px;text-align:center;background:white;border-radius:12px;padding:6px">✅ Groq listo - sin descarga</div>
 <p id="modoTexto" style="background:white;padding:8px;border-radius:12px;font-size:12px;text-align:center;margin:0"></p>
 <div style="background:white;padding:8px;border-radius:12px">
-<b style="font-size:12px">🔑 Grok (xAI) - solo sesión</b>
-<input id="geminiKey" placeholder="Pegá tu llave de Grok" style="margin-top:6px;font-size:11px">
+<b style="font-size:12px">🔑 Groq (GRATIS) - solo sesión</b>
+<input id="geminiKey" placeholder="Pegá tu llave de Groq" style="margin-top:6px;font-size:11px">
 <button class="btn" style="background:#a8e0ff" onclick="guardarKey()">💾 Activar llave</button>
 <button class="btn" style="background:#fff0a8" onclick="probarKey()">🧪 Probar si anda mi llave</button>
 <div id="keyEstado" style="font-size:11px;text-align:center;margin-top:4px"></div>
@@ -98,7 +98,7 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 <div id="panelYTbig" style="display:none;margin-top:8px;background:white;border-radius:15px;padding:12px"><b>🎵 Música grande</b><input id="ytLinkBig" placeholder="Pegá tu link de YouTube"><button class="btn" style="background:#ff8fb8;color:white" onclick="document.getElementById('ytLink').value=document.getElementById('ytLinkBig').value;ponerYT();document.getElementById('ytFrameBig').src=document.getElementById('ytFrame').src">▶️ Poner</button><iframe id="ytFrameBig" width="100%" height="220" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen style="border-radius:12px;margin-top:8px"></iframe></div>
 </div>
 <script>
-var MODELO_GROK = "grok-3-mini";
+var MODELO_GROQ = "llama-3.3-70b-versatile";
 function toggleBox(id){ var el=document.getElementById(id); el.classList.toggle("min"); var b=el.querySelector(".mini-btn"); if(b) b.innerText=el.classList.contains("min")?"+" : "–"; }
 function toggleSidebar(){ var s=document.getElementById("sidebar"), r=document.getElementById("resizer"); var o=s.style.display!=="none"; s.style.display=o?"none":"flex"; r.style.display=o?"none":"block"; }
 function togglePanel(id){ var ids=["panelChat","panelPDF","panelAudio","panelYTbig"]; for(var i=0;i<ids.length;i++){ var el=document.getElementById(ids[i]); if(ids[i]===id){ el.style.display=(ids[i]==="panelChat"||ids[i]==="panelPDF")?"flex":"block"; if(ids[i]!=="panelChat") el.style.flex="1"; } else el.style.display="none"; } }
@@ -322,32 +322,32 @@ function mostrarChat(){ var chat=document.getElementById("chat"); chat.innerHTML
 function renderLista(){ var h=""; for(var i=0;i<orden.length;i++){ var c=orden[i]; h+='<button class="btn" style="background:white" onclick="cambiar(\''+c.id+'\')">'+escapeHTML(c.emoji)+' '+escapeHTML(c.nombre)+'</button>'; } document.getElementById("listaChats").innerHTML=h; }
 function crearChat(){ var n=prompt("Nombre del chat"); if(!n) return; var id="chat_"+Date.now(); chats[id]=[]; orden.push({id:id,nombre:n,emoji:"💖"}); sec=id; guardar(); renderLista(); mensajesMostrados=[]; mostrarChat(); }
 function cambiar(id){ sec=id; guardar(); renderLista(); mensajesMostrados=[]; var lista=chats[sec]||[]; for(var i=0;i<lista.length;i++) mensajesMostrados.push(lista[i]); mostrarChat(); }
-function cambiarModo(modo){ modoActual="rapido"; document.getElementById("btnAdulta").classList.add("modo-activo"); document.getElementById("modoTexto").innerText="⚡ Grok + Wiki/DDG"; document.getElementById("estadoIA").innerText="⚡ Modo Grok"; }
-function guardarKey(){ var k=document.getElementById("geminiKey").value.trim(); if(!k){ alert("Pegá tu llave de Grok"); return; } geminiKeyEnMemoria=k; try{localStorage.setItem("grok_key",k);}catch(e){} document.getElementById("keyEstado").innerText="✅ Llave de Grok cargada"; }
+function cambiarModo(modo){ modoActual="rapido"; document.getElementById("btnAdulta").classList.add("modo-activo"); document.getElementById("modoTexto").innerText="⚡ Groq Gratis + Wiki/DDG"; document.getElementById("estadoIA").innerText="⚡ Modo Groq"; }
+function guardarKey(){ var k=document.getElementById("geminiKey").value.trim(); if(!k){ alert("Pegá tu llave de Groq"); return; } geminiKeyEnMemoria=k; try{localStorage.setItem("groq_key",k);}catch(e){} document.getElementById("keyEstado").innerText="✅ Llave de Groq cargada"; }
 async function probarKey(){
-  var key=geminiKeyEnMemoria || document.getElementById("geminiKey").value.trim() || localStorage.getItem("grok_key") || "";
-  if(!key){ document.getElementById("keyEstado").innerText="❌ Pegá primero tu llave de Grok"; return; }
+  var key=geminiKeyEnMemoria || document.getElementById("geminiKey").value.trim() || localStorage.getItem("groq_key") || "";
+  if(!key){ document.getElementById("keyEstado").innerText="❌ Pegá primero tu llave de Groq"; return; }
   geminiKeyEnMemoria=key; document.getElementById("keyEstado").innerText="Probando...";
   try{
-    var r=await fetch("https://api.x.ai/v1/chat/completions",{ method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer "+key}, body:JSON.stringify({model:MODELO_GROK, messages:[{role:"user",content:"Respondé solo: Hola"}], max_tokens:10}) });
-    if(r.ok) document.getElementById("keyEstado").innerText="✅ La conexión con Grok funciona";
+    var r=await fetch("https://api.groq.com/openai/v1/chat/completions",{ method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer "+key}, body:JSON.stringify({model:MODELO_GROQ, messages:[{role:"user",content:"Respondé solo: Hola"}], max_tokens:10}) });
+    if(r.ok) document.getElementById("keyEstado").innerText="✅ La conexión con Groq funciona";
     else { var txt=await r.text(); document.getElementById("keyEstado").innerText="❌ Error "+r.status+": "+txt.slice(0,300); }
   }catch(e){ document.getElementById("keyEstado").innerText="❌ No pude conectar: "+e.message; }
 }
 async function hablarConGemini(mensaje, infoInternet, memoria){
-  var key=geminiKeyEnMemoria || document.getElementById("geminiKey").value.trim() || localStorage.getItem("grok_key") || "";
-  if(!key) return "❌ Pegá tu llave de Grok y tocá Activar llave.";
+  var key=geminiKeyEnMemoria || document.getElementById("geminiKey").value.trim() || localStorage.getItem("groq_key") || "";
+  if(!key) return "❌ Pegá tu llave de Groq y tocá Activar llave.";
   geminiKeyEnMemoria=key;
   var historial=[{role:"system",content:"Sos IAgus, amiga argentina, hablá normal. Tenés esta memoria y este PDF que subió la usuaria, leelo vos y respondé con lo que dice ahí, no inventes. Memoria:\n"+(memoria||"")+" \nInfo:\n"+(infoInternet||"Sin info")}];
   for(var i=0;i<mensajesMostrados.length;i++){ var m=mensajesMostrados[i]; if(m.q!=="Vos" && m.q!=="IAgus") continue; var t=String(m.t).slice(0,1200); var role=m.q==="Vos"?"user":"assistant"; historial.push({role:role,content:t}); }
   historial=historial.slice(-15);
-  var r=await fetch("https://api.x.ai/v1/chat/completions",{ method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer "+key}, body:JSON.stringify({ model:MODELO_GROK, messages:historial, temperature:0.7, max_tokens:1000 }) });
+  var r=await fetch("https://api.groq.com/openai/v1/chat/completions",{ method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer "+key}, body:JSON.stringify({ model:MODELO_GROQ, messages:historial, temperature:0.7, max_tokens:1000 }) });
   if(!r.ok){
     var txt=await r.text();
-    if(r.status===503 || r.status===429) return "⚠️ Grok está saturado ahora (error "+r.status+"). Esperá 1 minuto y mandá de nuevo, o usá 🌐 Buscar en internet.\n\nY ya te busqué en Wikipedia + DuckDuckGo:\n"+(infoInternet||"No encontré nada.");
-    return "❌ Grok error "+r.status+": "+txt.slice(0,300);
+    if(r.status===503 || r.status===429) return "⚠️ Groq está saturado ahora (error "+r.status+"). Esperá 1 minuto y mandá de nuevo, o usá 🌐 Buscar en internet.\n\nY ya te busqué en Wikipedia + DuckDuckGo:\n"+(infoInternet||"No encontré nada.");
+    return "❌ Groq error "+r.status+": "+txt.slice(0,300);
   }
-  var d=await r.json(); var out=d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content; if(out) return limpiarTexto(out).slice(0,1800); return "Grok no devolvió texto.";
+  var d=await r.json(); var out=d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content; if(out) return limpiarTexto(out).slice(0,1800); return "Groq no devolvió texto.";
 }
 async function hablarConIA(mensaje){
   var memoria=construirMemoria(); var infoInternet="";
@@ -355,7 +355,7 @@ async function hablarConIA(mensaje){
     memoria = memoria + "\n\nPDF SUBIDO POR LA USUARIA, LEÉLO VOS Y RESPONDÉ CON LO QUE DICE AHÍ:\n" + pdfTextoTotal.slice(0, 6000);
   }
   if(necesitaInternet(mensaje)){ document.getElementById("estadoIA").innerText="🌐 Buscando en Wikipedia + DuckDuckGo..."; infoInternet=await buscarEnInternet(mensaje); }
-  try{ var g=await hablarConGemini(mensaje, infoInternet, memoria); return g; }catch(e){ return "❌ Error Grok: "+e.message; }
+  try{ var g=await hablarConGemini(mensaje, infoInternet, memoria); return g; }catch(e){ return "❌ Error Groq: "+e.message; }
 }
 async function responderIA(mensaje){ try{ var r=await hablarConIA(mensaje); agregarMensaje("IAgus", r || "⚠️ No pude responder."); }catch(e){ agregarMensaje("IAgus","⚠️ Error: "+e.message); } }
 async function hablar(){
@@ -364,7 +364,7 @@ async function hablar(){
   document.getElementById("estadoIA").innerText="⚡ Pensando...";
   var boton=document.getElementById("btnEnviar"); if(boton) boton.disabled=true;
   await responderIA(mensaje);
-  document.getElementById("estadoIA").innerText="⚡ Modo Grok";
+  document.getElementById("estadoIA").innerText="⚡ Modo Groq";
   if(boton) boton.disabled=false;
 }
 function renderTareas(){ var cont=document.getElementById("listaTareas"); if(!cont) return; cont.innerHTML=""; for(var i=0;i<tareas.length;i++){ (function(i){ var t=tareas[i]; var div=document.createElement("div"); div.className="tarea"+(t.hecha?" hecha":""); var label=document.createElement("span"); label.textContent=t.texto; var acc=document.createElement("span"); var chk=document.createElement("input"); chk.type="checkbox"; chk.checked=!!t.hecha; chk.style.width="auto"; chk.onchange=function(){ t.hecha=chk.checked; guardar(); renderTareas(); }; var del=document.createElement("button"); del.textContent="✕"; del.onclick=function(){ tareas.splice(i,1); guardar(); renderTareas(); }; acc.appendChild(chk); acc.appendChild(del); div.appendChild(label); div.appendChild(acc); cont.appendChild(div); })(i); } }
@@ -417,8 +417,8 @@ document.getElementById("buscarInput").addEventListener("keydown", function(e){ 
 document.getElementById("buscarInternetInput").addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); buscarInternetBoton(); } });
 (function(){ var res=document.getElementById("resizer"), side=document.getElementById("sidebar"), dragging=false; function start(e){ dragging=true; e.preventDefault(); } function move(e){ if(!dragging) return; var x=e.touches?e.touches[0].clientX:e.clientX; if(x>160 && x<520) side.style.width=x+"px"; } function end(){ dragging=false; } res.addEventListener("mousedown",start); res.addEventListener("touchstart",start); document.addEventListener("mousemove",move); document.addEventListener("touchmove",move); document.addEventListener("mouseup",end); document.addEventListener("touchend",end); })();
 try{
-  var savedGrok=""; try{savedGrok=localStorage.getItem("grok_key")||"";}catch(e){}
-  if(savedGrok){ geminiKeyEnMemoria=savedGrok; document.getElementById("geminiKey").value=savedGrok; document.getElementById("keyEstado").innerText="✅ Llave de Grok guardada"; }
+  var savedGroq=""; try{savedGroq=localStorage.getItem("groq_key")||"";}catch(e){}
+  if(savedGroq){ geminiKeyEnMemoria=savedGroq; document.getElementById("geminiKey").value=savedGroq; document.getElementById("keyEstado").innerText="✅ Llave de Groq guardada"; }
   renderLista(); renderTareas();
   var tg=localStorage.getItem("temaIAgus"); if(tg){ try{ var th=JSON.parse(tg); document.body.style.background=th.f; document.getElementById("sidebar").style.background=th.r; document.body.style.color=th.l; document.getElementById("cFondo").value=th.f; document.getElementById("cRosa").value=th.r; document.getElementById("cBoton").value=th.b; document.getElementById("cLetra").value=th.l; }catch(e){} }
   var cg=localStorage.getItem("chatActivoAgus"); if(cg && chats[cg]) sec=cg;
