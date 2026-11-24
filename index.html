@@ -35,6 +35,19 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 .pdf-page{background:white;margin:8px auto;padding:12px;border-radius:8px;line-height:1.6;font-size:14px;white-space:pre-wrap;word-break:break-word}
 .color-dot{width:30px;height:30px;border-radius:50%;border:3px solid white;cursor:pointer;box-shadow:0 0 0 1px #ccc}
 </style>
+  /* ADAPTABLE PARA CELU */
+@media (max-width: 768px){
+  body{flex-direction:column;overflow-y:auto;height:auto;min-height:100dvh}
+  .sidebar{width:100%;max-width:none;min-width:0;height:auto;max-height:55vh;padding:8px}
+  #resizer{display:none !important}
+  .main{width:100%;height:auto;min-height:80vh;padding:8px;padding-bottom:140px;overflow:visible}
+  #panelChat{height:auto}
+  #chat{height:42vh !important;min-height:280px;max-height:50vh !important}
+  textarea{font-size:16px}
+  .btn{font-size:14px;padding:12px}
+  #panelPDF,#panelAudio,#panelYTbig{height:auto}
+  #pdfViewer{max-height:400px}
+}
 </head>
 <body>
 <div class="sidebar" id="sidebar">
