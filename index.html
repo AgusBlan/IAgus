@@ -298,4 +298,134 @@ async function searchImages(){
   $("chat").scrollTop=$("chat").scrollHeight;
   try{
     const url="https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=12&gsrsearch="+encoded+"&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=420&format=json&origin=*";
-    const r=await fetch(url);if(!r.ok)throw new Error("HTTP "+r.status
+    const r=await fetch(url);if(!r.ok)throw new Error("HTTP "+r.status);
+    const data=await r.json();const pages=Object.values(data.query?.pages||{});
+    if(!pages.length){grid.innerHTML="<p>No encontré imágenes de eso, probá con otra palabra.</p>";return;}
+    pages.forEach(pg=>{
+      const info=pg.imageinfo?.[0];if(!info)return;
+      const card=document.createElement("div");card.className="imagecard";
+      const img=document.createElement("img");img.src=info.thumburl||info.url;img.alt=pg.title||"Imagen";img.loading="lazy";card.appendChild(img);
+      const title=document.createElement("div");title.textContent=(pg.title||"Imagen").replace(/^File:/,"");card.appendChild(title);
+      const meta=info.extmetadata||{};const author=document.createElement("div");author.textContent="Autoría: "+(meta.Artist?.value||"Consultar fuente").replace(/<[^>]*>/g," ").slice(0,130);card.appendChild(author);
+      const license=document.createElement("div");license.textContent="Licencia: "+(meta.LicenseShortName?.value||"Ver en Wikimedia");card.appendChild(license);
+      grid.appendChild(card);
+    });
+    remember("La usuaria buscó imágenes de: "+q);
+  }catch(e){grid.innerHTML="<p>⚠️ No pude buscar imágenes: "+escapeText(e.message)+"</p>";}
+}
+async function extractPdf(file){
+  if(!window.pdfjsLib)return "No se pudo cargar el lector de PDF.";
+  const buf=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  let full="";
+  for(let p=1;p<=pdf.numPages;p++){
+    const page=await pdf.getPage(p);
+    const txt=await page.getTextContent();
+    full+=txt.items.map(it=>it.str).join(" ")+"\n\n";
+    if(full.length>60000)break;
+  }
+  return full;
+}
+function updatePdfStatus(){
+  let info=state.pdfs[state.active];
+  if(info){pdfText=info.text||"";pdfFileName=info.name||"";$("sidebarPdfStatus").textContent="📎 PDF en este chat: "+pdfFileName+" - Ya podés preguntarle sobre él.";}
+  else{pdfText="";pdfFileName="";$("sidebarPdfStatus").textContent="El PDF quedará disponible para hacer preguntas en esta conversación.";}
+}
+async function handlePdfFile(file,isSidebar){
+  if(!file)return;
+  if(isSidebar) $("sidebarPdfStatus").textContent="Leyendo PDF...";
+  else $("pdfStatus").textContent="Leyendo PDF...";
+  try{
+    const text=await extractPdf(file);
+    pdfText=text;pdfFileName=file.name;
+    state.pdfs[state.active]={name:file.name,text:text.slice(0,60000)};
+    saveState();
+    if(isSidebar){
+      $("sidebarPdfStatus").textContent="✅ PDF listo en este chat: "+file.name+" - Preguntame lo que quieras sobre él.";
+      addMessage("assistant","✅ Ya leí tu PDF: "+file.name+". Preguntame lo que quieras sobre él.");
+      remember("La usuaria subió PDF: "+file.name);
+    }else{
+      $("pdfStatus").textContent="✅ PDF cargado: "+file.name;
+      $("audioText").value=text.slice(0,8000);
+      const viewer=$("pdfViewer");viewer.innerHTML="";
+      text.split("\n\n").slice(0,30).forEach(chunk=>{
+        if(!chunk.trim())return;
+        const div=document.createElement("div");div.className="pdfpage";div.textContent=chunk;viewer.appendChild(div);
+      });
+    }
+  }catch(e){
+    if(isSidebar) $("sidebarPdfStatus").textContent="❌ No pude leer el PDF: "+e.message;
+    else $("pdfStatus").textContent="❌ No pude leer el PDF: "+e.message;
+  }
+}
+function speakChunks(){
+  if(speechIndex>=speechChunks.length){$("audioStatus").textContent="✅ Terminado";return;}
+  const u=new SpeechSynthesisUtterance(speechChunks[speechIndex]);
+  u.lang="es-AR";u.rate=parseFloat($("voiceRate").value);
+  u.onend=()=>{speechIndex++;$("audioStatus").textContent="Leyendo "+speechIndex+" de "+speechChunks.length; speakChunks();};
+  speechSynthesis.speak(u);
+}
+function playAudio(){
+  const txt=$("audioText").value.trim();if(!txt){$("audioStatus").textContent="Pegá un texto o cargá un PDF.";return;}
+  speechSynthesis.cancel();speechChunks=txt.match(/.{1,800}([.!?]\s|$)/g)||[txt];speechIndex=0;speakChunks();
+}
+function renderTasks(){
+  const box=$("taskList");box.replaceChildren();
+  state.tasks.forEach(t=>{
+    const d=document.createElement("div");d.className="task";
+    const cb=document.createElement("input");cb.type="checkbox";cb.checked=!!t.done;cb.onchange=()=>{t.done=cb.checked;saveState();renderTasks();};
+    const s=document.createElement("span");s.textContent=t.text;if(t.done)s.style.textDecoration="line-through";
+    const del=document.createElement("button");del.textContent="✕";del.onclick=()=>{state.tasks=state.tasks.filter(x=>x!==t);saveState();renderTasks();};
+    d.append(cb,s,del);box.appendChild(d);
+  });
+}
+function renderTimer(){let m=Math.floor(seconds/60),s=seconds%60;$("timer").textContent=(m<10?"0"+m:m)+":"+(s<10?"0"+s:s);}
+function timerStart(){if(timerId)return;timerId=setInterval(()=>{seconds--;renderTimer();if(seconds<=0){clearInterval(timerId);timerId=null;$("timerStatus").textContent="¡Tiempo terminado!";}},1000);}
+function timerPause(){clearInterval(timerId);timerId=null;}
+function timerReset(){timerPause();seconds=totalSeconds;renderTimer();$("timerStatus").textContent="Listo";}
+function timerSet(sec,label){timerPause();seconds=sec;totalSeconds=sec;renderTimer();$("timerStatus").textContent=label;}
+loadState();
+if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+if(apiKey){$("apiKey").value=apiKey;$("keyStatus").textContent="✅ Tenés clave guardada, ya podés dialogar.";}
+$("saveKey").onclick=()=>{const k=$("apiKey").value.trim();if(!k){$("keyStatus").textContent="Pegá tu clave primero.";return;}apiKey=k;localStorage.setItem(KEY_STORAGE,k);$("keyStatus").textContent="✅ Clave guardada, ya podés dialogar.";};
+$("testKey").onclick=testKey;
+$("send").onclick=sendMessage;
+$("message").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}});
+$("newChat").onclick=newChat;
+$("fastMode").onclick=()=>{mode="rapido";$("modeInfo").textContent="Rápido: responde Gemini por internet.";$("status").textContent="⚡ Modo Rápido";};
+$("privateMode").onclick=async()=>{mode="privado";$("modeInfo").textContent="Privado: responde en el dispositivo.";$("status").textContent="🔒 Cargando modelo privado...";await loadPrivate();};
+$("searchImages").onclick=searchImages;
+$("imageQuery").addEventListener("keydown",e=>{if(e.key==="Enter")searchImages();});
+$("attachPdf").onclick=()=>$("sidebarPdfFile").click();
+$("sidebarPdfFile").addEventListener("change",e=>{handlePdfFile(e.target.files[0],true);e.target.value="";});
+$("pdfFile").addEventListener("change",e=>{handlePdfFile(e.target.files[0],false);e.target.value="";});
+$("readPdf").onclick=()=>{if(!pdfText){$("pdfStatus").textContent="Primero subí un PDF.";return;}$("audioText").value=pdfText.slice(0,8000);document.querySelector('[data-panel="audioPanel"]').click();playAudio();};
+$("copyPdf").onclick=()=>{if(!pdfText)return;navigator.clipboard.writeText(pdfText).then(()=>$("pdfStatus").textContent="✅ Texto copiado");};
+$("playAudio").onclick=playAudio;
+$("pauseAudio").onclick=()=>{if(speechSynthesis.paused)speechSynthesis.resume();else speechSynthesis.pause();};
+$("stopAudio").onclick=()=>{speechSynthesis.cancel();$("audioStatus").textContent="Parado";};
+$("playYoutube").onclick=()=>{
+  let v=$("youtubeUrl").value.trim();if(!v)return;
+  let m=v.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([A-Za-z0-9_-]{11})/);
+  if(m){$("youtubeFrame").src="https://www.youtube.com/embed/"+m[1]+"?autoplay=1";}
+  else{$("youtubeFrame").src="https://www.youtube.com/embed?listType=search&list="+encodeURIComponent(v)+"&autoplay=1";}
+};
+document.querySelectorAll("[data-panel]").forEach(btn=>{
+  btn.onclick=()=>{
+    ["chatPanel","pdfPanel","audioPanel","musicPanel"].forEach(id=>$(id).classList.add("hidden"));
+    $(btn.dataset.panel).classList.remove("hidden");
+    if(btn.dataset.panel==="chatPanel")$(btn.dataset.panel).style.display="flex";else $(btn.dataset.panel).style.display="block";
+  };
+});
+$("timerStart").onclick=timerStart;$("timerPause").onclick=timerPause;$("timerReset").onclick=timerReset;
+$("timer25").onclick=()=>timerSet(1500,"Estudio 25 min");$("timer5").onclick=()=>timerSet(300,"Descanso 5 min");
+$("addTask").onclick=()=>{const v=$("taskInput").value.trim();if(!v)return;state.tasks.push({text:v,done:false});$("taskInput").value="";saveState();renderTasks();remember("Tarea de Agus: "+v);};
+$("taskInput").addEventListener("keydown",e=>{if(e.key==="Enter")$("addTask").click();});
+$("bgColor").oninput=e=>{document.documentElement.style.setProperty("--bg",e.target.value);};
+$("pinkColor").oninput=e=>{document.documentElement.style.setProperty("--pink",e.target.value);};
+$("hotColor").oninput=e=>{document.documentElement.style.setProperty("--hot",e.target.value);};
+$("clearData").onclick=()=>{if(!confirm("¿Borrar TODO?"))return;localStorage.removeItem(STORAGE);localStorage.removeItem(KEY_STORAGE);location.reload();};
+renderChatList();renderChat();renderTasks();renderTimer();updatePdfStatus();
+</script>
+</body>
+</html>
