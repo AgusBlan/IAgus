@@ -2,7 +2,7 @@
   "name": "IAgus",
   "short_name": "IAgus",
   "id": "/IAgus/",
-  "start_url": "/IAgus/?v=2",
+  "start_url": "/IAgus/index.html",
   "scope": "/IAgus/",
   "display": "standalone",
   "orientation": "portrait",
