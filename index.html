@@ -247,6 +247,60 @@ function crearChat(){ document.getElementById("chat").innerHTML=""; ultimaRespue
 function grabarAudio(){ alert("Mantené apretado para grabar - esta función usa el micrófono del celu"); }
 document.getElementById("audioPdfFile").addEventListener("change", async function(e){ var f=e.target.files[0]; if(!f) return; document.getElementById("audioPdfStatus").innerText="Leyendo "+f.name+"..."; try{ var buf=await f.arrayBuffer(); var pdf=await pdfjsLib.getDocument({data:buf}).promise; var txt=""; for(var p=1;p<=pdf.numPages;p++){ var page=await pdf.getPage(p); var c=await page.getTextContent(); for(var i=0;i<c.items.length;i++) txt+=c.items[i].str+" "; } document.getElementById("textoAudioLibro").value=txt; document.getElementById("textoAudioGrande").value=txt; pdfTextoTotal=txt; pdfNombreActual=f.name; document.getElementById("audioPdfStatus").innerText="✅ Listo para leer"; }catch(err){ document.getElementById("audioPdfStatus").innerText="Error: "+err.message; } });
 cambiarModo('rapido'); resumenDia();
+// === PDF EN EL CHAT + QUE LO RECUERDE ===
+try{
+  var guardado = localStorage.getItem("pdfRecordadoIAgus");
+  if(guardado){
+    var obj = JSON.parse(guardado);
+    pdfTextoTotal = obj.texto || "";
+    pdfNombreActual = obj.nombre || "";
+    setTimeout(function(){
+      if(pdfTextoTotal) addMsg("Me acuerdo de tu PDF '" + pdfNombreActual + "'. Pedime lo que quieras sobre él 💖", "ia");
+    }, 500);
+  }
+}catch(e){}
+
+document.getElementById("subirArchivo").addEventListener("change", async function(e){
+  var f = e.target.files[0];
+  if(!f) return;
+  addMsg("Subiste: " + f.name, "vos");
+  if(f.name.toLowerCase().endsWith(".pdf")){
+    try{
+      document.getElementById("estadoIA").innerText = "Leyendo tu PDF...";
+      var buf = await f.arrayBuffer();
+      var pdf = await pdfjsLib.getDocument({data: buf}).promise;
+      var txtTotal = "";
+      for(var p=1; p<=pdf.numPages; p++){
+        var page = await pdf.getPage(p);
+        var c = await page.getTextContent();
+        for(var i=0; i<c.items.length; i++) txtTotal += c.items[i].str + " ";
+        txtTotal += "\n\n";
+      }
+      pdfTextoTotal = txtTotal;
+      pdfNombreActual = f.name;
+      // LO GUARDA PARA QUE LO RECUERDE
+      try{ localStorage.setItem("pdfRecordadoIAgus", JSON.stringify({nombre: f.name, texto: txtTotal.slice(0,15000)})); }catch(err){}
+      document.getElementById("pdfNombre").innerText = f.name;
+      document.getElementById("pdfPaginas").innerText = pdf.numPages;
+      document.getElementById("textoAudioLibro").value = txtTotal;
+      document.getElementById("textoAudioGrande").value = txtTotal;
+      addMsg("Listo, ya leí tu PDF '" + f.name + "' y lo guardé en mi memoria. Ahora podés pedirme: 'armame un pdf resumen del pdf original que te mandé' y te lo armo.", "ia");
+      document.getElementById("estadoIA").innerText = "";
+    }catch(err){
+      addMsg("No pude leer ese PDF: " + err.message, "ia");
+    }
+  } else {
+    var reader = new FileReader();
+    reader.onload = function(){
+      pdfTextoTotal = String(reader.result).slice(0,15000);
+      pdfNombreActual = f.name;
+      try{ localStorage.setItem("pdfRecordadoIAgus", JSON.stringify({nombre: f.name, texto: pdfTextoTotal})); }catch(err){}
+      addMsg("Ya leí tu archivo '" + f.name + "' y lo guardé. Preguntame lo que quieras sobre él.", "ia");
+    };
+    reader.readAsText(f);
+  }
+  e.target.value = "";
+});
 </script>
 </body>
 </html>
