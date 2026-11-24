@@ -14,8 +14,8 @@
 body{margin:0;font-family:Arial;background:#fff6f8;display:flex;min-height:100vh;height:100dvh;overflow:hidden}
 .sidebar{width:260px;min-width:180px;max-width:500px;background:#ffc7dd;padding:10px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;height:100vh;flex-shrink:0}
 #resizer{width:8px;cursor:ew-resize;background:#ff8fb8;flex-shrink:0}
-.main{flex:1;display:flex;flex-direction:column;padding:10px;min-width:0;height:100vh;overflow-y:auto;padding-bottom:120px}
-#chat{height:32vh;min-height:200px;max-height:38vh;flex:1;background:white;border-radius:18px;padding:14px;border:2px dashed #ffc7dd;overflow-y:auto;scroll-behavior:smooth}
+.main{flex:1;display:flex;flex-direction:column;padding:10px;min-width:0;height:100vh;overflow-y:auto}
+#chat{height:32vh;min-height:200px;max-height:38vh;flex:none;background:white;border-radius:18px;padding:14px;border:2px dashed #ffc7dd;overflow-y:auto;scroll-behavior:smooth}
 .msg{padding:10px;border-radius:12px;margin:8px 0;word-break:break-word;white-space:pre-wrap}
 .msg img{max-width:100%;border-radius:12px}
 .vos{background:#fff0a8}.ia{background:#ffe3ee}
@@ -34,20 +34,20 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 #pdfViewer{max-height:500px;overflow-y:auto;background:#f5f5f5;border-radius:12px;padding:8px}
 .pdf-page{background:white;margin:8px auto;padding:12px;border-radius:8px;line-height:1.6;font-size:14px;white-space:pre-wrap;word-break:break-word}
 .color-dot{width:30px;height:30px;border-radius:50%;border:3px solid white;cursor:pointer;box-shadow:0 0 0 1px #ccc}
-/* ADAPTABLE PARA CELU */
-@media (max-width: 768px){
-  body{flex-direction:column;overflow-y:auto;height:auto;min-height:100dvh}
-  .sidebar{width:100%;max-width:none;min-width:0;height:auto;max-height:55vh;padding:8px}
+/* CELU ADAPTABLE - sin cambiar la interfaz de compu */
+@media (max-width: 900px){
+  body{flex-direction:column !important;overflow-y:auto !important;height:auto !important}
+  .sidebar{display:none !important;width:100% !important;max-width:none !important;height:auto !important;max-height:70vh !important;overflow-y:auto}
+  .sidebar.mostrar{display:flex !important}
   #resizer{display:none !important}
-  .main{width:100%;height:auto;min-height:80vh;padding:8px;padding-bottom:140px;overflow:visible}
+  .main{width:100% !important;height:auto !important;min-height:100dvh;padding:8px !important;padding-bottom:160px !important;overflow:visible !important}
   #panelChat{height:auto}
-  #chat{height:42vh !important;min-height:280px;max-height:50vh !important}
-  textarea{font-size:16px}
-  .btn{font-size:14px;padding:12px}
-  #panelPDF,#panelAudio,#panelYTbig{height:auto}
-  #pdfViewer{max-height:400px} }
+  #chat{height:45vh !important;min-height:300px !important;max-height:55vh !important}
+  textarea{font-size:16px !important}
+  .btn{font-size:14px !important}
+  #pdfViewer{max-height:400px}
+}
 </style>
-
 </head>
 <body>
 <div class="sidebar" id="sidebar">
@@ -81,6 +81,7 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 </div>
 <div id="resizer"></div>
 <div class="main">
+<button class="btn" style="background:#ffc7dd" onclick="document.getElementById('sidebar').classList.toggle('mostrar')">☰ Menú / Esconder menú</button>
 <div style="display:flex;gap:6px;flex-wrap:wrap">
 <button class="btn" style="background:#ffc7dd;width:auto;padding:8px 14px" onclick="togglePanel('panelChat')">💬 Chat</button>
 <button class="btn" style="background:#a8e0ff;width:auto;padding:8px 14px" onclick="togglePanel('panelPDF')">📄 Lector PDF</button>
@@ -133,7 +134,15 @@ function guardarPerfil(){ miPerfil=document.getElementById("miPerfilTexto").valu
 function aprenderDeVos(t){ try{ var m=localStorage.getItem("memoriaCompartidaIAgus")||""; localStorage.setItem("memoriaCompartidaIAgus", m+"\n"+t); }catch(e){} }
 function borrarTodo(){ if(!confirm("¿Borrar TODO?")) return; try{ localStorage.removeItem("miPerfilAgus"); localStorage.removeItem("chatsAgusV2"); localStorage.removeItem("ordenAgus"); localStorage.removeItem("chatActivoAgus"); localStorage.removeItem("memoriaCompartidaIAgus"); localStorage.removeItem("tareasAgus"); localStorage.removeItem("temaIAgus"); localStorage.removeItem("pdfRecordadoIAgus"); localStorage.removeItem("memoriaCompletaIAgus"); localStorage.removeItem("groqKey"); }catch(e){} location.reload(); }
 function mostrarTemas(){ var d=document.getElementById("temas"); d.style.display=d.style.display==="block"?"none":"block"; }
-function cambiarTema(){ var f=document.getElementById("cFondo").value, r=document.getElementById("cRosa").value, b=document.getElementById("cBoton").value, l=document.getElementById("cLetra").value; document.body.style.background=f; document.getElementById("sidebar").style.background=r; document.body.style.color=l; try{localStorage.setItem("temaIAgus",JSON.stringify({f:f,r:r,b:b,l:l}));}catch(e){} }
+function cambiarTema(){
+  var f=document.getElementById("cFondo").value, r=document.getElementById("cRosa").value, b=document.getElementById("cBoton").value, l=document.getElementById("cLetra").value;
+  document.body.style.background=f; document.body.style.color=l;
+  document.getElementById("sidebar").style.background=r;
+  document.getElementById("chat").style.borderColor=r;
+  document.getElementById("btnEnviar").style.background=b;
+  var res=document.getElementById("resizer"); if(res) res.style.background=b;
+  try{localStorage.setItem("temaIAgus",JSON.stringify({f:f,r:r,b:b,l:l}));}catch(e){}
+}
 function aplicarTema(fondo,rosa,boton,letra){ document.getElementById("cFondo").value=fondo; document.getElementById("cRosa").value=rosa; document.getElementById("cBoton").value=boton; document.getElementById("cLetra").value=letra; cambiarTema(); }
 function miUbicacion(){ if(!navigator.geolocation){ document.getElementById("ubicacion").innerText="Sin geolocalización."; return; } document.getElementById("ubicacion").innerText="Buscando ubicación..."; navigator.geolocation.getCurrentPosition(function(p){ var lat=p.coords.latitude, lon=p.coords.longitude; document.getElementById("ubicacion").innerText="Ubicación: "+lat.toFixed(4)+", "+lon.toFixed(4); document.getElementById("mapaBox").style.display="block"; document.getElementById("mapa").src="https://www.openstreetmap.org/export/embed.html?bbox="+(lon-0.02)+"%2C"+(lat-0.02)+"%2C"+(lon+0.02)+"%2C"+(lat+0.02)+"&layer=mapnik&marker="+lat+"%2C"+lon; }, function(){ document.getElementById("ubicacion").innerText="No pude obtener ubicación."; }); }
 function cambiarModo(m){ document.getElementById("modoTexto").innerText="Modo: Groq Gratis ⚡"; }
@@ -158,7 +167,6 @@ async function hablar(){
     textoParaIA = "El usuario subió un PDF llamado '"+pdfNombreActual+"'. Hacé un RESUMEN CLARO Y COMPLETO de ese PDF, con títulos, ideas principales y conclusiones. NO repitas el texto del PDF. Texto del PDF: "+pdfTextoTotal.slice(0,8000);
   } else if(texto.length>8000){ textoParaIA = texto.slice(0,8000)+"\n\n[El texto sigue, pero no lo repitas, solo respondé la pregunta sobre este texto]"; }
   else if(pdfTextoTotal && texto.toLowerCase().includes("pdf")){ textoParaIA = "El usuario subió un PDF. Contenido: "+pdfTextoTotal.slice(0,6000)+"\n\nPregunta: "+texto+"\n\nNO repitas el PDF, solo respondé."; }
-  // MEMORIA COMPLETA - TODA la conversación, no solo 10 mensajes
   var historial = [{role:"system", content: PROMPT_IA+" Perfil: "+miPerfil+" MEMORIA DE TODA LA CONVERSACIÓN ANTERIOR: "+(localStorage.getItem("memoriaCompletaIAgus")||"")}];
   var divsHist = document.getElementById("chat").querySelectorAll(".msg");
   var todos = [];
@@ -180,7 +188,6 @@ async function hablar(){
     var resp=(data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "No pude responder, intentá de nuevo.";
     ultimaRespuestaIA=limpiarTexto(resp); addMsg(ultimaRespuestaIA,"ia");
     guardarChats();
-    // Guarda memoria completa para siempre
     try{
       var mem = localStorage.getItem("memoriaCompletaIAgus")||"";
       var nuevo = mem + "\nUsuario: " + texto.slice(0,500) + "\nIAgus: " + ultimaRespuestaIA.slice(0,500);
@@ -272,7 +279,22 @@ function leerAudiolibro(){ var t=document.getElementById("textoAudioLibro").valu
 function leerAudiolibroGrande(){ var t=document.getElementById("textoAudioGrande").value || document.getElementById("textoAudioLibro").value; if(!t.trim()){ alert("No hay texto"); return; } speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(t); speechSynthesis.speak(u); }
 function pausarAudiolibro(){ if(speechSynthesis.speaking){ speechSynthesis.pause(); } }
 function pararAudiolibro(){ speechSynthesis.cancel(); }
-function generarImagen(){ var q=document.getElementById("promptImagen").value.trim(); if(!q) return; window.open("https://unsplash.com/s/photos/"+encodeURIComponent(q),"_blank"); }
+async function generarImagen(){
+  var q=document.getElementById("promptImagen").value.trim(); if(!q) return;
+  addMsg("🔍 Buscando imágenes de: "+q, "vos");
+  try{
+    var r=await fetch("https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch="+encodeURIComponent(q)+"&gsrnamespace=6&gsrlimit=4&prop=imageinfo&iiprop=url&iiurlwidth=500");
+    var d=await r.json();
+    var pages=d.query && d.query.pages ? Object.values(d.query.pages) : [];
+    if(pages.length===0){ addMsg("No encontré imágenes de '"+q+"', probá con otra palabra en inglés, ej: cat, space", "ia"); return; }
+    var c=document.getElementById("chat");
+    var div=document.createElement("div"); div.className="msg ia";
+    var html="🖼️ Encontré esto de <b>"+escapeHTML(q)+"</b>:<br>";
+    for(var i=0;i<pages.length;i++){ var u=pages[i].imageinfo && pages[i].imageinfo[0] ? pages[i].imageinfo[0].thumburl || pages[i].imageinfo[0].url : ""; if(u) html+="<img src='"+u+"' style='max-width:100%;border-radius:12px;margin:6px 0'>"; }
+    div.innerHTML=html; c.appendChild(div); c.scrollTop=c.scrollHeight;
+    guardarChats();
+  }catch(e){ addMsg("No pude buscar imágenes, revisá tu internet", "ia"); }
+}
 function resumenDia(){ var hoy=new Date().toLocaleDateString("es-AR"); document.getElementById("hoyBox").innerText="Hoy es "+hoy+" 💖 ¡Vos podés!"; }
 function agregarTareaManual(){ var v=document.getElementById("nuevaTarea").value.trim(); if(!v) return; var d=document.createElement("div"); d.className="tarea"; d.innerText=v; d.onclick=function(){ d.classList.toggle("hecha"); }; document.getElementById("listaTareas").appendChild(d); document.getElementById("nuevaTarea").value=""; }
 function grabarAudio(){
@@ -382,6 +404,16 @@ try{
 }catch(e){}
 document.getElementById("subirArchivo").addEventListener("change", async function(e){
   var f=e.target.files[0]; if(!f) return;
+  if(f.type && f.type.startsWith("image/")){
+    var urlImg = URL.createObjectURL(f);
+    var c=document.getElementById("chat");
+    var d=document.createElement("div"); d.className="msg vos";
+    d.innerHTML="📸 <b>"+escapeHTML(f.name)+"</b><br><img src='"+urlImg+"' style='max-width:100%;border-radius:12px;margin-top:6px'>";
+    c.appendChild(d); c.scrollTop=c.scrollHeight;
+    addMsg("Ya veo tu imagen '"+f.name+"'. Contame qué querés que haga con ella: ¿que la describa, que te ayude a estudiar con ella, o que la use para algo?", "ia");
+    guardarChats();
+    e.target.value=""; return;
+  }
   addMsg("Subiste: "+f.name, "vos");
   if(f.name.toLowerCase().endsWith(".pdf")){
     try{
@@ -408,6 +440,7 @@ try{
   var keyGuardada = localStorage.getItem("groqKey");
   if(keyGuardada) document.getElementById("geminiKey").value = keyGuardada;
 }catch(e){}
+try{ var tGuardado=JSON.parse(localStorage.getItem("temaIAgus")||"null"); if(tGuardado){ document.getElementById("cFondo").value=tGuardado.f; document.getElementById("cRosa").value=tGuardado.r; document.getElementById("cBoton").value=tGuardado.b; document.getElementById("cLetra").value=tGuardado.l; cambiarTema(); } }catch(e){}
 cambiarModo('rapido'); resumenDia();
 setTimeout(function(){ cambiarChat(chatActivo); if(pdfTextoTotal){ setTimeout(function(){ addMsg("Me acuerdo de tu PDF '"+pdfNombreActual+"'. Pedime lo que quieras sobre él 💖","ia"); },500); } }, 300);
 </script>
