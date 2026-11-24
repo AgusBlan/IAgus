@@ -38,7 +38,7 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 </head>
 <body>
 <div class="sidebar" id="sidebar">
-<h3 style="text-align:center;background:white;border-radius:15px;padding:8px;margin:0">🌸 IAgus<br><span style="font-size:11px">IAgus</span></h3>
+<h3 style="text-align:center;background:white;border-radius:15px;padding:8px;margin:0">🌸 IAgus<br><span style="font-size:11px">IAgus v1</span></h3>
 <button class="modo-btn modo-activo" id="btnAdulta" style="background:#a8e0ff" onclick="cambiarModo('rapido')">⚡ Groq Gratis</button>
 <div id="estadoCerebro" style="font-size:11px;text-align:center;background:white;border-radius:12px;padding:6px">✅ Groq listo</div>
 <p id="modoTexto" style="background:white;padding:8px;border-radius:12px;font-size:12px;text-align:center;margin:0"></p>
@@ -79,14 +79,13 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 <p id="ubicacion" style="font-size:13px"></p>
 <div id="mapaBox" style="display:none"><iframe id="mapa" width="100%" height="200" style="border:0;border-radius:15px"></iframe></div>
 <p id="estadoIA" style="font-size:13px;text-align:center;font-weight:bold"></p>
-<textarea id="entrada" placeholder="Hablame... Ej: che IAgus explicame esto en lunfardo, o enseñame inglés, o haceme un Excel de..."></textarea>
+<textarea id="entrada" placeholder="Hablame..."></textarea>
 <button class="btn" id="btnEnviar" style="background:#ff8fb8;color:white" onclick="hablar()">ENVIAR</button>
 <div style="display:flex;gap:6px;flex-wrap:wrap">
 <button class="btn" style="background:#fff0a8;flex:1" onclick="generarArchivo('pdf')">📄 PDF</button>
 <button class="btn" style="background:#a8d8ff;flex:1" onclick="generarArchivo('doc')">📝 Word / DOC</button>
 <button class="btn" style="background:#b8f1cc;flex:1" onclick="generarArchivo('excel')">📊 Excel</button>
 </div>
-<div style="font-size:11px;text-align:center;margin-top:4px">Pedile: "haceme un PDF / Word / Excel de..." y después tocá el botón 💖</div>
 <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center">
 <label class="btn" style="background:#fff0a8;width:auto;display:inline-block;text-align:center;cursor:pointer">📎 Subir archivo<input type="file" id="subirArchivo" accept="*/*" style="display:none"></label>
 <button class="btn" style="background:#a8d8ff;width:auto" id="btnAudio2" onclick="grabarAudio()">🎤 Grabar</button>
@@ -108,7 +107,8 @@ try{ miPerfil = localStorage.getItem("miPerfilAgus")||""; }catch(e){}
 var ultimaRespuestaIA = "";
 var ultimoTema = "";
 var pdfTextoTotal = "";
-var PROMPT_IA = "Sos IAgus, una IA argentina, copada y amable. Entendes PERFECTO el lunfardo argentino: che, boludo/a, posta, re, copado, flashear, quilombo, piola, groso, banca, dale, etc. Si el usuario te habla en lunfardo, respondé en el mismo tono argentino pero sin ser grosera. Enseñas idiomas: inglés, portugués, francés, italiano, alemán. Cuando te piden enseñar un idioma, das vocabulario, ejemplos, pronunciación y mini práctica, no solo traducción. REGLA MUY IMPORTANTE: Nunca repitas textual lo que el usuario te manda de un PDF o archivo. Si te mandan un texto largo o un PDF, NO lo copies. Resumilo, explicalo, respondé la pregunta sobre ese texto, pero no lo repitas. Si te piden un archivo, prepará el contenido en formato de tabla o lista clara para PDF / DOC / Excel. NO cortes los mensajes a la mitad: si la respuesta es larga, desarrollala completa, con títulos y partes. Si te piden PDF, DOC o Excel, decí 'Listo, tocá el botón de PDF / DOC / Excel abajo para descargarlo' y dejá el contenido listo.";
+var pdfNombreActual = "";
+var PROMPT_IA = "Sos IAgus, una IA amable y clara. ENTENDES PERFECTO el lunfardo argentino: che, boludo/a, posta, re, copado, flashear, quilombo, piola, groso, banca, dale, etc. Cuando el usuario te habla con lunfardo, entendelo, pero VOS RESPONDE SIEMPRE en español claro, neutro y educado, SIN lunfardo, SIN decir boludo, che, posta, re, ni ninguna palabra de lunfardo. Nunca imites el lunfardo. Enseñas idiomas: inglés, portugués, francés, italiano, alemán. Cuando te piden enseñar un idioma, das vocabulario, ejemplos, pronunciación y mini práctica. REGLA CLAVE: Nunca repitas textual lo que el usuario te manda de un PDF o archivo. Si te mandan un texto largo o un PDF, NO lo copies. Resumilo, explicalo, respondé la pregunta sobre ese texto, pero no lo repitas. Si te piden un archivo, prepará el contenido listo para PDF / DOC / Excel, con títulos y partes. NO cortes los mensajes a la mitad: si la respuesta es larga, desarrollala completa.";
 function toggleBox(id){ var el=document.getElementById(id); el.classList.toggle("min"); var b=el.querySelector(".mini-btn"); if(b) b.innerText=el.classList.contains("min")?"+" : "–"; }
 function toggleSidebar(){ var s=document.getElementById("sidebar"), r=document.getElementById("resizer"); var o=s.style.display!=="none"; s.style.display=o?"none":"flex"; r.style.display=o?"none":"block"; }
 function togglePanel(id){ var ids=["panelChat","panelPDF","panelAudio","panelYTbig"]; for(var i=0;i<ids.length;i++){ var el=document.getElementById(ids[i]); if(ids[i]===id){ el.style.display=(ids[i]==="panelChat"||ids[i]==="panelPDF")?"flex":"block"; if(ids[i]!=="panelChat") el.style.flex="1"; } else el.style.display="none"; } }
@@ -122,33 +122,45 @@ function mostrarTemas(){ var d=document.getElementById("temas"); d.style.display
 function cambiarTema(){ var f=document.getElementById("cFondo").value, r=document.getElementById("cRosa").value, b=document.getElementById("cBoton").value, l=document.getElementById("cLetra").value; document.body.style.background=f; document.getElementById("sidebar").style.background=r; document.body.style.color=l; try{localStorage.setItem("temaIAgus",JSON.stringify({f:f,r:r,b:b,l:l}));}catch(e){} }
 function aplicarTema(fondo,rosa,boton,letra){ document.getElementById("cFondo").value=fondo; document.getElementById("cRosa").value=rosa; document.getElementById("cBoton").value=boton; document.getElementById("cLetra").value=letra; cambiarTema(); }
 function miUbicacion(){ if(!navigator.geolocation){ document.getElementById("ubicacion").innerText="Sin geolocalización."; return; } document.getElementById("ubicacion").innerText="Buscando ubicación..."; navigator.geolocation.getCurrentPosition(function(p){ var lat=p.coords.latitude, lon=p.coords.longitude; document.getElementById("ubicacion").innerText="Ubicación: "+lat.toFixed(4)+", "+lon.toFixed(4); document.getElementById("mapaBox").style.display="block"; document.getElementById("mapa").src="https://www.openstreetmap.org/export/embed.html?bbox="+(lon-0.02)+"%2C"+(lat-0.02)+"%2C"+(lon+0.02)+"%2C"+(lat+0.02)+"&layer=mapnik&marker="+lat+"%2C"+lon; }, function(){ document.getElementById("ubicacion").innerText="No pude obtener ubicación."; }); }
-function cambiarModo(m){ document.getElementById("modoTexto").innerText="Modo: Groq Gratis ⚡ - Lunfardo + Idiomas + Archivos"; }
+function cambiarModo(m){ document.getElementById("modoTexto").innerText="Modo: Groq Gratis ⚡"; }
 function guardarKey(){ var k=document.getElementById("geminiKey").value.trim(); if(!k){ document.getElementById("keyEstado").innerText="Pegá una llave primero"; return; } try{ sessionStorage.setItem("groqKey",k); }catch(e){} document.getElementById("keyEstado").innerText="✅ Llave activada"; }
 function probarKey(){ var k=""; try{ k=sessionStorage.getItem("groqKey")||document.getElementById("geminiKey").value.trim(); }catch(e){} if(!k){ document.getElementById("keyEstado").innerText="No hay llave"; return; } document.getElementById("keyEstado").innerText="Probando..."; fetch("https://api.groq.com/openai/v1/models",{headers:{Authorization:"Bearer "+k}}).then(function(r){ document.getElementById("keyEstado").innerText=r.ok?"✅ Tu llave anda!":"❌ No anda: "+r.status; }).catch(function(){ document.getElementById("keyEstado").innerText="❌ Error de conexión"; }); }
 function addMsg(texto, clase){ var c=document.getElementById("chat"); var d=document.createElement("div"); d.className="msg "+clase; d.innerText=texto; c.appendChild(d); c.scrollTop=c.scrollHeight; return d; }
+function quiereArchivo(texto){
+  var t=texto.toLowerCase();
+  if(t.includes("pdf")) return "pdf";
+  if(t.includes("word")||t.includes("doc")) return "doc";
+  if(t.includes("excel")||t.includes("planilla")) return "excel";
+  return null;
+}
 async function hablar(){
   var entrada=document.getElementById("entrada");
   var texto=entrada.value.trim(); if(!texto) return;
   ultimoTema=texto;
-  // Si es un texto larguísimo de PDF, no lo mostramos entero en el chat
-  if(texto.length>2000){ addMsg(texto.slice(0,500)+"... [texto largo de PDF / archivo - IAgus lo lee sin repetirlo]","vos"); } else { addMsg(texto,"vos"); }
+  var tipoArchivo=quiereArchivo(texto);
+  var esResumenPDF = texto.toLowerCase().includes("resumen") && (texto.toLowerCase().includes("pdf") || texto.toLowerCase().includes("original"));
+  if(texto.length>2000){ addMsg(texto.slice(0,500)+"... [texto largo - lo leo sin repetirlo]","vos"); } else { addMsg(texto,"vos"); }
   entrada.value="";
   document.getElementById("estadoIA").innerText="IAgus está pensando...";
   var key=""; try{ key=sessionStorage.getItem("groqKey")||""; }catch(e){}
-  if(!key){ var r="Che, me falta la llave de Groq para responderte posta. Pegala arriba y tocá Activar llave 💖. Igual ya te dejé listo: si me pediste un PDF / Word / Excel, tocá el botón de abajo para descargarlo."; ultimaRespuestaIA=r; addMsg(r,"ia"); document.getElementById("estadoIA").innerText=""; return; }
-  // No le mandamos el PDF entero para que no lo repita, solo un resumen
+  if(!key){ var r="Necesito tu llave de Groq para responderte. Pegala arriba y tocá Activar llave. Si me pediste un PDF, cuando tengas la llave te lo armo solo."; ultimaRespuestaIA=r; addMsg(r,"ia"); document.getElementById("estadoIA").innerText=""; return; }
   var textoParaIA = texto;
-  if(texto.length>8000){ textoParaIA = texto.slice(0,8000)+"\n\n[El texto sigue, pero no lo repitas, solo respondé la pregunta sobre este texto]"; }
-  if(pdfTextoTotal && texto.toLowerCase().includes("pdf")){ textoParaIA = "El usuario subió un PDF. Contenido resumido: "+pdfTextoTotal.slice(0,6000)+"\n\nPregunta del usuario: "+texto+"\n\nNO repitas el PDF, solo respondé la pregunta."; }
+  if(esResumenPDF){
+    if(!pdfTextoTotal){ addMsg("No encuentro ningún PDF subido. Subí primero el PDF en 'Lector PDF' y después pedime el resumen.","ia"); document.getElementById("estadoIA").innerText=""; return; }
+    textoParaIA = "El usuario subió un PDF llamado '"+pdfNombreActual+"'. Hacé un RESUMEN CLARO Y COMPLETO de ese PDF, con títulos, ideas principales y conclusiones. NO repitas el texto del PDF. Texto del PDF (resumido): "+pdfTextoTotal.slice(0,8000);
+  } else if(texto.length>8000){ textoParaIA = texto.slice(0,8000)+"\n\n[El texto sigue, pero no lo repitas, solo respondé la pregunta sobre este texto]"; }
+  else if(pdfTextoTotal && texto.toLowerCase().includes("pdf")){ textoParaIA = "El usuario subió un PDF. Contenido: "+pdfTextoTotal.slice(0,6000)+"\n\nPregunta: "+texto+"\n\nNO repitas el PDF, solo respondé."; }
   try{
     var res=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+key},body:JSON.stringify({model:MODELO_GROQ, max_tokens:4000, temperature:0.7, messages:[{role:"system",content:PROMPT_IA+" Perfil: "+miPerfil},{role:"user",content:textoParaIA}]})});
     var data=await res.json();
     var resp=(data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "No pude responder, intentá de nuevo.";
     ultimaRespuestaIA=limpiarTexto(resp); addMsg(ultimaRespuestaIA,"ia");
+    if(tipoArchivo){
+      setTimeout(function(){ generarArchivo(tipoArchivo); addMsg("Listo, ya te descargué el "+tipoArchivo.toUpperCase()+" 💖","ia"); }, 500);
+    }
   }catch(e){ var err="Error de conexión con Groq. Revisá tu llave o tu internet."; ultimaRespuestaIA=err; addMsg(err,"ia"); }
   document.getElementById("estadoIA").innerText="";
 }
-// --- ARCHIVOS: PDF / DOC / EXCEL ---
 function generarArchivo(tipo){
   var texto=ultimaRespuestaIA || document.getElementById("chat").innerText;
   if(!texto || !texto.trim()){ alert("Primero pedile algo a IAgus"); return; }
@@ -179,7 +191,6 @@ function crearExcel(titulo, texto){
     var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "IAgus");
     XLSX.writeFile(wb, "IAgus.xlsx");
   }catch(e){
-    // Si falla SheetJS, baja como CSV que Excel abre igual
     var csv="IAgus - "+titulo+"\n"+texto.replace(/,/g,";");
     var blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
     var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="IAgus.csv"; a.click();
@@ -194,6 +205,7 @@ function guardarResaltado(){ try{ localStorage.setItem("pdfResaltado_"+document.
 function limpiarResaltado(){ var marks=document.querySelectorAll("#pdfViewer mark"); for(var i=0;i<marks.length;i++){ var m=marks[i]; var p=document.createTextNode(m.innerText); m.parentNode.replaceChild(p,m); } }
 document.getElementById("pdfInput").addEventListener("change", async function(e){
   var f=e.target.files[0]; if(!f) return;
+  pdfNombreActual=f.name;
   document.getElementById("pdfNombre").innerText=f.name;
   document.getElementById("pdfViewer").innerHTML="Cargando PDF...";
   try{
@@ -211,11 +223,11 @@ document.getElementById("pdfInput").addEventListener("change", async function(e)
     document.getElementById("pdfViewer").innerHTML=html;
     document.getElementById("textoAudioLibro").value=pdfTextoTotal;
     document.getElementById("textoAudioGrande").value=pdfTextoTotal;
-    addMsg("Subiste el PDF '"+f.name+"'. Ya lo leí, no te lo voy a repetir. Preguntame lo que quieras sobre ese PDF 💖","ia");
+    addMsg("Ya leí tu PDF '"+f.name+"'. No te lo voy a repetir. Pedime lo que quieras, por ejemplo: 'armame un pdf resumen del pdf original que te mandé'","ia");
   }catch(err){ document.getElementById("pdfViewer").innerHTML="Error: "+err.message; }
 });
 function leerPDFcomoAudio(){ document.getElementById("textoAudioLibro").value=pdfTextoTotal; togglePanel('panelAudio'); leerAudiolibroGrande(); }
-function buscarRapido(){ var q=document.getElementById("buscarInput").value.trim(); if(!q) return; document.getElementById("resultadoBuscar").innerText="Buscá '"+q+"' en Wikipedia o en el chat 💖"; }
+function buscarRapido(){ var q=document.getElementById("buscarInput").value.trim(); if(!q) return; document.getElementById("resultadoBuscar").innerText="Buscá '"+q+"' en Wikipedia o en el chat"; }
 async function buscarInternetBoton(){ var q=document.getElementById("buscarInternetInput").value.trim(); if(!q) return; document.getElementById("resultadoInternet").innerText="Buscando..."; try{ var r=await fetch("https://es.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(q)); var d=await r.json(); document.getElementById("resultadoInternet").innerText=d.extract || "No encontré en Wikipedia, probá con otra palabra."; }catch(e){ document.getElementById("resultadoInternet").innerText="Error buscando en internet"; } }
 var pomoTimer=null, pomoSeg=25*60;
 function pomoSet(min,txt){ pomoSeg=min*60; pomoPause(); document.getElementById("pomoTime").innerText=(min<10?"0"+min:min)+":00"; document.getElementById("pomoEstado").innerText=txt+" 💖"; }
@@ -233,7 +245,7 @@ function resumenDia(){ var hoy=new Date().toLocaleDateString("es-AR"); document.
 function agregarTareaManual(){ var v=document.getElementById("nuevaTarea").value.trim(); if(!v) return; var d=document.createElement("div"); d.className="tarea"; d.innerText=v; d.onclick=function(){ d.classList.toggle("hecha"); }; document.getElementById("listaTareas").appendChild(d); document.getElementById("nuevaTarea").value=""; }
 function crearChat(){ document.getElementById("chat").innerHTML=""; ultimaRespuestaIA=""; addMsg("Nuevo chat creado 💖 ¿De qué hablamos?","ia"); }
 function grabarAudio(){ alert("Mantené apretado para grabar - esta función usa el micrófono del celu"); }
-document.getElementById("audioPdfFile").addEventListener("change", async function(e){ var f=e.target.files[0]; if(!f) return; document.getElementById("audioPdfStatus").innerText="Leyendo "+f.name+"..."; try{ var buf=await f.arrayBuffer(); var pdf=await pdfjsLib.getDocument({data:buf}).promise; var txt=""; for(var p=1;p<=pdf.numPages;p++){ var page=await pdf.getPage(p); var c=await page.getTextContent(); for(var i=0;i<c.items.length;i++) txt+=c.items[i].str+" "; } document.getElementById("textoAudioLibro").value=txt; document.getElementById("textoAudioGrande").value=txt; pdfTextoTotal=txt; document.getElementById("audioPdfStatus").innerText="✅ Listo para leer"; }catch(err){ document.getElementById("audioPdfStatus").innerText="Error: "+err.message; } });
+document.getElementById("audioPdfFile").addEventListener("change", async function(e){ var f=e.target.files[0]; if(!f) return; document.getElementById("audioPdfStatus").innerText="Leyendo "+f.name+"..."; try{ var buf=await f.arrayBuffer(); var pdf=await pdfjsLib.getDocument({data:buf}).promise; var txt=""; for(var p=1;p<=pdf.numPages;p++){ var page=await pdf.getPage(p); var c=await page.getTextContent(); for(var i=0;i<c.items.length;i++) txt+=c.items[i].str+" "; } document.getElementById("textoAudioLibro").value=txt; document.getElementById("textoAudioGrande").value=txt; pdfTextoTotal=txt; pdfNombreActual=f.name; document.getElementById("audioPdfStatus").innerText="✅ Listo para leer"; }catch(err){ document.getElementById("audioPdfStatus").innerText="Error: "+err.message; } });
 cambiarModo('rapido'); resumenDia();
 </script>
 </body>
