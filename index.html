@@ -15,7 +15,7 @@ body{margin:0;font-family:Arial;background:#fff6f8;display:flex;min-height:100vh
 .sidebar{width:260px;min-width:180px;max-width:500px;background:#ffc7dd;padding:10px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;height:100vh;flex-shrink:0}
 #resizer{width:8px;cursor:ew-resize;background:#ff8fb8;flex-shrink:0}
 .main{flex:1;display:flex;flex-direction:column;padding:10px;min-width:0;height:100vh;overflow-y:auto}
-#chat{height:38vh;background:white;border-radius:18px;padding:14px;border:2px dashed #ffc7dd;overflow-y:auto}
+#chat{height:55vh;min-height:320px;flex:1;background:white;border-radius:18px;padding:14px;border:2px dashed #ffc7dd;overflow-y:auto;scroll-behavior:smooth}
 .msg{padding:10px;border-radius:12px;margin:8px 0;word-break:break-word;white-space:pre-wrap}
 .msg img{max-width:100%;border-radius:12px}
 .vos{background:#fff0a8}.ia{background:#ffe3ee}
@@ -118,14 +118,14 @@ function limpiarTexto(s){ s=String(s==null?"":s); s=s.split("**").join(""); retu
 function mostrarPerfil(){ var d=document.getElementById("perfilBox"); if(d.style.display==="block") d.style.display="none"; else { d.style.display="block"; document.getElementById("miPerfilTexto").value=miPerfil; } }
 function guardarPerfil(){ miPerfil=document.getElementById("miPerfilTexto").value.trim(); try{localStorage.setItem("miPerfilAgus",miPerfil);}catch(e){} aprenderDeVos("Mi perfil es: "+miPerfil); document.getElementById("perfilBox").style.display="none"; }
 function aprenderDeVos(t){ try{ var m=localStorage.getItem("memoriaCompartidaIAgus")||""; localStorage.setItem("memoriaCompartidaIAgus", m+"\n"+t); }catch(e){} }
-function borrarTodo(){ if(!confirm("¿Borrar TODO?")) return; try{ localStorage.removeItem("miPerfilAgus"); localStorage.removeItem("chatsAgusV2"); localStorage.removeItem("ordenAgus"); localStorage.removeItem("chatActivoAgus"); localStorage.removeItem("memoriaCompartidaIAgus"); localStorage.removeItem("tareasAgus"); localStorage.removeItem("temaIAgus"); localStorage.removeItem("pdfRecordadoIAgus"); }catch(e){} location.reload(); }
+function borrarTodo(){ if(!confirm("¿Borrar TODO?")) return; try{ localStorage.removeItem("miPerfilAgus"); localStorage.removeItem("chatsAgusV2"); localStorage.removeItem("ordenAgus"); localStorage.removeItem("chatActivoAgus"); localStorage.removeItem("memoriaCompartidaIAgus"); localStorage.removeItem("tareasAgus"); localStorage.removeItem("temaIAgus"); localStorage.removeItem("pdfRecordadoIAgus"); localStorage.removeItem("memoriaCompletaIAgus"); localStorage.removeItem("groqKey"); }catch(e){} location.reload(); }
 function mostrarTemas(){ var d=document.getElementById("temas"); d.style.display=d.style.display==="block"?"none":"block"; }
 function cambiarTema(){ var f=document.getElementById("cFondo").value, r=document.getElementById("cRosa").value, b=document.getElementById("cBoton").value, l=document.getElementById("cLetra").value; document.body.style.background=f; document.getElementById("sidebar").style.background=r; document.body.style.color=l; try{localStorage.setItem("temaIAgus",JSON.stringify({f:f,r:r,b:b,l:l}));}catch(e){} }
 function aplicarTema(fondo,rosa,boton,letra){ document.getElementById("cFondo").value=fondo; document.getElementById("cRosa").value=rosa; document.getElementById("cBoton").value=boton; document.getElementById("cLetra").value=letra; cambiarTema(); }
 function miUbicacion(){ if(!navigator.geolocation){ document.getElementById("ubicacion").innerText="Sin geolocalización."; return; } document.getElementById("ubicacion").innerText="Buscando ubicación..."; navigator.geolocation.getCurrentPosition(function(p){ var lat=p.coords.latitude, lon=p.coords.longitude; document.getElementById("ubicacion").innerText="Ubicación: "+lat.toFixed(4)+", "+lon.toFixed(4); document.getElementById("mapaBox").style.display="block"; document.getElementById("mapa").src="https://www.openstreetmap.org/export/embed.html?bbox="+(lon-0.02)+"%2C"+(lat-0.02)+"%2C"+(lon+0.02)+"%2C"+(lat+0.02)+"&layer=mapnik&marker="+lat+"%2C"+lon; }, function(){ document.getElementById("ubicacion").innerText="No pude obtener ubicación."; }); }
 function cambiarModo(m){ document.getElementById("modoTexto").innerText="Modo: Groq Gratis ⚡"; }
-function guardarKey(){ var k=document.getElementById("geminiKey").value.trim(); if(!k){ document.getElementById("keyEstado").innerText="Pegá una llave primero"; return; } try{ sessionStorage.setItem("groqKey",k); }catch(e){} document.getElementById("keyEstado").innerText="✅ Llave activada"; }
-function probarKey(){ var k=""; try{ k=sessionStorage.getItem("groqKey")||document.getElementById("geminiKey").value.trim(); }catch(e){} if(!k){ document.getElementById("keyEstado").innerText="No hay llave"; return; } document.getElementById("keyEstado").innerText="Probando..."; fetch("https://api.groq.com/openai/v1/models",{headers:{Authorization:"Bearer "+k}}).then(function(r){ document.getElementById("keyEstado").innerText=r.ok?"✅ Tu llave anda!":"❌ No anda: "+r.status; }).catch(function(){ document.getElementById("keyEstado").innerText="❌ Error de conexión"; }); }
+function guardarKey(){ var k=document.getElementById("geminiKey").value.trim(); if(!k){ document.getElementById("keyEstado").innerText="Pegá una llave primero"; return; } try{ localStorage.setItem("groqKey",k); }catch(e){} document.getElementById("keyEstado").innerText="✅ Llave activada y guardada, no se borra al cerrar"; }
+function probarKey(){ var k=""; try{ k=localStorage.getItem("groqKey")||document.getElementById("geminiKey").value.trim(); }catch(e){} if(!k){ document.getElementById("keyEstado").innerText="No hay llave"; return; } document.getElementById("keyEstado").innerText="Probando..."; fetch("https://api.groq.com/openai/v1/models",{headers:{Authorization:"Bearer "+k}}).then(function(r){ document.getElementById("keyEstado").innerText=r.ok?"✅ Tu llave anda!":"❌ No anda: "+r.status; }).catch(function(){ document.getElementById("keyEstado").innerText="❌ Error de conexión"; }); }
 function addMsg(texto, clase){ if(!texto || texto==="undefined") return; var c=document.getElementById("chat"); var d=document.createElement("div"); d.className="msg "+clase; d.innerText=texto; c.appendChild(d); c.scrollTop=c.scrollHeight; return d; }
 function quiereArchivo(texto){ var t=texto.toLowerCase(); if(t.includes("pdf")) return "pdf"; if(t.includes("word")||t.includes("doc")) return "doc"; if(t.includes("excel")||t.includes("planilla")) return "excel"; return null; }
 async function hablar(){
@@ -137,7 +137,7 @@ async function hablar(){
   if(texto.length>2000){ addMsg(texto.slice(0,500)+"... [texto largo - lo leo sin repetirlo]","vos"); } else { addMsg(texto,"vos"); }
   entrada.value="";
   document.getElementById("estadoIA").innerText="IAgus está pensando...";
-  var key=""; try{ key=sessionStorage.getItem("groqKey")||""; }catch(e){}
+  var key=""; try{ key=localStorage.getItem("groqKey")||""; }catch(e){}
   if(!key){ var r="Necesito tu llave de Groq para responderte. Pegala arriba y tocá Activar llave."; ultimaRespuestaIA=r; addMsg(r,"ia"); document.getElementById("estadoIA").innerText=""; guardarChats(); return; }
   var textoParaIA = texto;
   if(esResumenPDF){
@@ -145,12 +145,35 @@ async function hablar(){
     textoParaIA = "El usuario subió un PDF llamado '"+pdfNombreActual+"'. Hacé un RESUMEN CLARO Y COMPLETO de ese PDF, con títulos, ideas principales y conclusiones. NO repitas el texto del PDF. Texto del PDF: "+pdfTextoTotal.slice(0,8000);
   } else if(texto.length>8000){ textoParaIA = texto.slice(0,8000)+"\n\n[El texto sigue, pero no lo repitas, solo respondé la pregunta sobre este texto]"; }
   else if(pdfTextoTotal && texto.toLowerCase().includes("pdf")){ textoParaIA = "El usuario subió un PDF. Contenido: "+pdfTextoTotal.slice(0,6000)+"\n\nPregunta: "+texto+"\n\nNO repitas el PDF, solo respondé."; }
+  // MEMORIA COMPLETA - TODA la conversación, no solo 10 mensajes
+  var historial = [{role:"system", content: PROMPT_IA+" Perfil: "+miPerfil+" MEMORIA DE TODA LA CONVERSACIÓN ANTERIOR: "+(localStorage.getItem("memoriaCompletaIAgus")||"")}];
+  var divsHist = document.getElementById("chat").querySelectorAll(".msg");
+  var todos = [];
+  for(var h=0; h<divsHist.length; h++){
+    var esVos = divsHist[h].className.includes("vos");
+    var txtHist = divsHist[h].innerText;
+    if(txtHist && txtHist!=="undefined") todos.push({role: esVos?"user":"assistant", content: txtHist});
+  }
+  var totalChars = 0;
+  for(var h2=0; h2<todos.length; h2++){
+    totalChars += todos[h2].content.length;
+    if(totalChars > 12000) break;
+    historial.push(todos[h2]);
+  }
+  historial.push({role:"user", content: textoParaIA});
   try{
-    var res=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+key},body:JSON.stringify({model:MODELO_GROQ, max_tokens:4000, temperature:0.7, messages:[{role:"system",content:PROMPT_IA+" Perfil: "+miPerfil},{role:"user",content:textoParaIA}]})});
+    var res=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+key},body:JSON.stringify({model:MODELO_GROQ, max_tokens:4000, temperature:0.7, messages: historial})});
     var data=await res.json();
     var resp=(data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "No pude responder, intentá de nuevo.";
     ultimaRespuestaIA=limpiarTexto(resp); addMsg(ultimaRespuestaIA,"ia");
     guardarChats();
+    // Guarda memoria completa para siempre
+    try{
+      var mem = localStorage.getItem("memoriaCompletaIAgus")||"";
+      var nuevo = mem + "\nUsuario: " + texto.slice(0,500) + "\nIAgus: " + ultimaRespuestaIA.slice(0,500);
+      if(nuevo.length > 8000) nuevo = nuevo.slice(-8000);
+      localStorage.setItem("memoriaCompletaIAgus", nuevo);
+    }catch(e){}
     if(tipoArchivo){ addMsg("Listo, ya te preparé el "+tipoArchivo.toUpperCase()+" 💖 Tocá el botón de abajo ("+tipoArchivo.toUpperCase()+") cuando quieras verlo, no te lo descargo solo.", "ia"); guardarChats(); }
   }catch(e){ var err="Error de conexión con Groq. Revisá tu llave o tu internet."; ultimaRespuestaIA=err; addMsg(err,"ia"); guardarChats(); }
   document.getElementById("estadoIA").innerText="";
@@ -183,17 +206,13 @@ function crearDOC(titulo, texto){
   window.open(url, "_blank");
 }
 function crearExcel(titulo, texto){
-  try{
-    var filas=texto.split("\n").map(function(l){ return [l]; });
-    var ws=XLSX.utils.aoa_to_sheet([["IAgus - "+titulo]].concat(filas));
-    var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "IAgus");
-    XLSX.writeFile(wb, "IAgus.xlsx");
-  }catch(e){
-    var csv="IAgus - "+titulo+"\n"+texto.replace(/,/g,";");
-    var blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
-    var url=URL.createObjectURL(blob);
-    window.open(url, "_blank");
-  }
+  var filas=texto.split("\n").map(function(l){ return [l]; });
+  var ws=XLSX.utils.aoa_to_sheet([["IAgus - "+titulo]].concat(filas));
+  var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "IAgus");
+  var out=XLSX.write(wb, {bookType:"xlsx", type:"array"});
+  var blob=new Blob([out], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  var url=URL.createObjectURL(blob);
+  window.open(url, "_blank");
 }
 var pdfColor="amarillo", pdfColorHex="#fff176";
 var pdfjsLib=window.pdfjsLib;
@@ -246,6 +265,7 @@ function agregarTareaManual(){ var v=document.getElementById("nuevaTarea").value
 function grabarAudio(){ alert("Mantené apretado para grabar - esta función usa el micrófono del celu"); }
 var chatsGuardados = {};
 var chatActivo = "chat1";
+var primerCarga = true;
 try{
   var raw = JSON.parse(localStorage.getItem("chatsAgusV2")||"{}");
   for(var k in raw){ if(Array.isArray(raw[k])){ chatsGuardados[k]={nombre:k, mensajes:raw[k], cerrado:false}; } else { chatsGuardados[k]=raw[k]; } }
@@ -286,10 +306,15 @@ function renderListaChats(){
 }
 function cambiarChat(id){
   var c=document.getElementById("chat");
-  var msgsAntes=[];
-  var divsAntes=c.querySelectorAll(".msg");
-  for(var j=0;j<divsAntes.length;j++){ var tt=divsAntes[j].innerText; if(tt && tt!=="undefined") msgsAntes.push({texto:tt, clase:divsAntes[j].className.includes("vos")?"vos":"ia"}); }
-  if(chatsGuardados[chatActivo]) chatsGuardados[chatActivo].mensajes=msgsAntes;
+  if(!primerCarga){
+    var divsAntes=c.querySelectorAll(".msg");
+    if(divsAntes.length>0){
+      var msgsAntes=[];
+      for(var j=0;j<divsAntes.length;j++){ var tt=divsAntes[j].innerText; if(tt && tt!=="undefined") msgsAntes.push({texto:tt, clase:divsAntes[j].className.includes("vos")?"vos":"ia"}); }
+      if(chatsGuardados[chatActivo]) chatsGuardados[chatActivo].mensajes=msgsAntes;
+    }
+  }
+  primerCarga = false;
   chatActivo=id;
   c.innerHTML="";
   var msgs=(chatsGuardados[id] && chatsGuardados[id].mensajes)||[];
@@ -358,6 +383,10 @@ document.getElementById("subirArchivo").addEventListener("change", async functio
   }
   e.target.value="";
 });
+try{
+  var keyGuardada = localStorage.getItem("groqKey");
+  if(keyGuardada) document.getElementById("geminiKey").value = keyGuardada;
+}catch(e){}
 cambiarModo('rapido'); resumenDia();
 setTimeout(function(){ cambiarChat(chatActivo); if(pdfTextoTotal){ setTimeout(function(){ addMsg("Me acuerdo de tu PDF '"+pdfNombreActual+"'. Pedime lo que quieras sobre él 💖","ia"); },500); } }, 300);
 </script>
