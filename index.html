@@ -1,5 +1,4 @@
-
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -95,7 +94,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <div id="mapaBox" style="display:none"><iframe id="mapa" width="100%" height="200" style="border:0;border-radius:15px"></iframe></div>
 <p id="estadoIA" style="font-size:13px;text-align:center;font-weight:bold"></p>
 <textarea id="entrada" placeholder="Hablame..."></textarea>
-<button class="btn" style="background:#ff8fb8;color:white" onclick="hablar()">ENVIAR</button>
+<button class="btn" id="btnEnviar" style="background:#ff8fb8;color:white" onclick="try{hablar()}catch(e){alert('Error ENVIAR: '+e.message)}">ENVIAR</button>
 <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn" style="background:#b8f1cc;width:auto" onclick="cargarIA()">⬇️ Cerebro Privado</button><button class="btn" style="background:#fff0a8;width:auto" onclick="document.getElementById('subirArchivo').click()">📎 Subir archivo</button><button class="btn" style="background:#a8d8ff;width:auto" id="btnAudio2" onclick="grabarAudio()">🎤 Grabar</button><button class="btn" style="background:#e2c6ff;width:auto" onclick="leerUltimo()">🔊 Leeme lo último</button></div>
 </div>
 <div id="panelPDF" style="display:none;flex:1;flex-direction:column;min-height:0;margin-top:8px;background:white;border-radius:15px;padding:10px;overflow:hidden">
@@ -966,7 +965,7 @@ async function hablar(){
   agregarMensaje("Vos",mensaje);
   aprenderDeVos("La usuaria dijo: "+mensaje);
   document.getElementById("estadoIA").innerText=modoActual==="privado"?"🔒 Pensando en el dispositivo...":"⚡ IAgus está pensando...";
-  var boton=document.querySelector('button[onclick="hablar()"]');
+  var boton=document.getElementById("btnEnviar");
   if(boton) boton.disabled=true;
   await responderIA(mensaje);
   document.getElementById("estadoIA").innerText=modoActual==="privado"?"🔒 Modo Privado":"⚡ Modo Rápido";
