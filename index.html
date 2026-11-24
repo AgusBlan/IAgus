@@ -110,7 +110,7 @@ async function cargarIA(){
   document.getElementById("estadoIA").innerText="⬇️ Descargando cerebro...";
   try{
     var mod = await import("https://esm.run/@mlc-ai/web-llm");
-    engine = await mod.CreateMLCEngine("Qwen2.5-1.5B-Instruct-q4f16_1-MLC", { initProgressCallback: function(p){ document.getElementById("estadoIA").innerText="⬇️ Descargando: " + Math.round((p.progress || 0) * 100) + "%"; } });
+    engine = await mod.CreateMLCEngine("Qwen2.5-0.5B-Instruct-q4f16_1-MLC", { initProgressCallback: function(p){ document.getElementById("estadoIA").innerText="⬇️ Descargando: " + Math.round((p.progress || 0) * 100) + "%"; } });
     document.getElementById("estadoIA").innerText="✅ Privado listo";
     document.getElementById("estadoCerebro").innerText="✅ Cerebro Privado listo";
   }catch(e){ document.getElementById("estadoIA").innerText="❌ No se pudo cargar: " + e.message; }
