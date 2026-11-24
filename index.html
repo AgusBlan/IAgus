@@ -275,7 +275,15 @@ function pararAudiolibro(){ speechSynthesis.cancel(); }
 function generarImagen(){ var q=document.getElementById("promptImagen").value.trim(); if(!q) return; window.open("https://unsplash.com/s/photos/"+encodeURIComponent(q),"_blank"); }
 function resumenDia(){ var hoy=new Date().toLocaleDateString("es-AR"); document.getElementById("hoyBox").innerText="Hoy es "+hoy+" 💖 ¡Vos podés!"; }
 function agregarTareaManual(){ var v=document.getElementById("nuevaTarea").value.trim(); if(!v) return; var d=document.createElement("div"); d.className="tarea"; d.innerText=v; d.onclick=function(){ d.classList.toggle("hecha"); }; document.getElementById("listaTareas").appendChild(d); document.getElementById("nuevaTarea").value=""; }
-function grabarAudio(){ alert("Mantené apretado para grabar - esta función usa el micrófono del celu"); }
+function grabarAudio(){
+  if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)){ alert("Tu navegador no soporta dictado por voz, escribilo tranqui 💖"); return; }
+  var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var rec = new Rec(); rec.lang='es-AR';
+  document.getElementById("estadoIA").innerText="🎤 Te escucho... hablá";
+  rec.onresult=function(e){ document.getElementById("entrada").value=e.results[0][0].transcript; document.getElementById("estadoIA").innerText=""; };
+  rec.onerror=function(){ document.getElementById("estadoIA").innerText=""; };
+  rec.start();
+}
 var chatsGuardados = {};
 var chatActivo = "chat1";
 var primerCarga = true;
