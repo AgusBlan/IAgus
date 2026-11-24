@@ -38,7 +38,7 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 </head>
 <body>
 <div class="sidebar" id="sidebar">
-<h3 style="text-align:center;background:white;border-radius:15px;padding:8px;margin:0">🌸 IAgus<br><span style="font-size:11px">v97</span></h3>
+<h3 style="text-align:center;background:white;border-radius:15px;padding:8px;margin:0">🌸 IAgus<br><span style="font-size:11px">v97 - TODO + sin lag</span></h3>
 <div style="display:flex;gap:6px">
 <button class="modo-btn" id="btnAdulta" style="background:#a8e0ff" onclick="cambiarModo('rapido')">⚡ Rápido</button>
 <button class="modo-btn" id="btnPrivado" style="background:#b8f1cc" onclick="cambiarModo('privado')">🔒 Privado</button>
@@ -354,29 +354,14 @@ async function probarKey(){
     else { var txt=await r.text(); document.getElementById("keyEstado").innerText="❌ Error "+r.status+": "+txt.slice(0,300); }
   }catch(e){ document.getElementById("keyEstado").innerText="❌ No pude conectar: "+e.message; }
 }
-async function hablarConIA(mensaje){
-  // Si pregunta por el PDF, contestar del PDF sin usar el cerebro
-  if(pdfTextoTotal && pdfTextoTotal.length > 50){
-    var mm = mensaje.toLowerCase();
-    if(mm.indexOf("pdf")!==-1 || mm.indexOf("harari")!==-1 || mm.indexOf("ese")!==-1 || mm.indexOf("resumen")!==-1 || mm.indexOf("capitulo")!==-1 || mm.indexOf("capítulo")!==-1){
-      // Buscar la palabra clave en el PDF
-      var palabras = mensaje.split(" ").filter(function(w){ return w.length > 4; });
-      var encontrado = "";
-      for(var i=0;i<palabras.length;i++){
-        var idx = pdfTextoTotal.toLowerCase().indexOf(palabras[i].toLowerCase());
-        if(idx!==-1){ encontrado = pdfTextoTotal.slice(Math.max(0, idx-300), idx+800); break; }
-      }
-      if(!encontrado) encontrado = pdfTextoTotal.slice(0, 1200);
-      return "📄 En tu PDF dice esto sobre eso:\n\n" + encontrado;
-    }
-  {
+async function hablarConGemini(mensaje, infoInternet, memoria){
   var key=geminiKeyEnMemoria || document.getElementById("geminiKey").value.trim();
   if(!key) return "❌ Pegá tu llave en Rápido y tocá Activar llave.";
   geminiKeyEnMemoria=key;
   var historial=[];
   for(var i=0;i<mensajesMostrados.length;i++){ var m=mensajesMostrados[i]; if(m.q!=="Vos" && m.q!=="IAgus") continue; var t=String(m.t).slice(0,1200); var role=m.q==="Vos"?"user":"model"; var ultimo=historial[historial.length-1]; if(ultimo && ultimo.role===role) ultimo.parts[0].text+="\n"+t; else historial.push({role:role,parts:[{text:t}]}); }
   historial=historial.slice(-14);
-  var r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + MODELO_GEMINI + ":generateContent",{ method:"POST", headers:{"Content-Type":"application/json","x-goog-api-key":key}, body:JSON.stringify({ systemInstruction:{parts:[{text:"Sos IAgus, amiga argentina, hablá normal. Usá esta info de Wikipedia + DuckDuckGo, no inventes. Info:\n"+(infoInternet||"Sin info")}]}, contents:historial, generationConfig:{temperature:0.7,maxOutputTokens:1000} }) });
+  var r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + MODELO_GEMINI + ":generateContent",{ method:"POST", headers:{"Content-Type":"application/json","x-goog-api-key":key}, body:JSON.stringify({ systemInstruction:{parts:[{text:"Sos IAgus, amiga argentina, hablá normal. Tenés esta memoria y este PDF que subió la usuaria, leelo vos y respondé con lo que dice ahí, no inventes. Memoria:\n"+(memoria||"")+" \nInfo:\n"+(infoInternet||"Sin info")}]}, contents:historial, generationConfig:{temperature:0.7,maxOutputTokens:1000} }) });
   if(!r.ok){
     var txt=await r.text();
     if(r.status===503 || r.status===429) return "⚠️ Gemini está saturado ahora (error "+r.status+"). Esperá 1 minuto y mandá de nuevo, o usá 🔒 Privado o 🌐 Buscar en internet.\n\nY ya te busqué en Wikipedia + DuckDuckGo:\n"+(infoInternet||"No encontré nada.");
@@ -387,7 +372,7 @@ async function hablarConIA(mensaje){
 async function hablarConIA(mensaje){
   var memoria=construirMemoria(); var infoInternet="";
   if(pdfTextoTotal && pdfTextoTotal.length > 50){
-  memoria = memoria + "\n\nPDF SUBIDO, LEÉLO VOS:\n" + pdfTextoTotal.slice(0, 6000);
+    memoria = memoria + "\n\nPDF SUBIDO POR LA USUARIA, LEÉLO VOS Y RESPONDÉ CON LO QUE DICE AHÍ:\n" + pdfTextoTotal.slice(0, 6000);
   }
   if(necesitaInternet(mensaje)){ document.getElementById("estadoIA").innerText="🌐 Buscando en Wikipedia + DuckDuckGo..."; infoInternet=await buscarEnInternet(mensaje); }
   if(modoActual==="privado"){
@@ -395,11 +380,11 @@ async function hablarConIA(mensaje){
     if(!engine) return "🔒 Tocá Descargar Cerebro Privado y esperá a ✅ Privado listo.";
     try{
       var hist=[]; for(var i=0;i<mensajesMostrados.length;i++){ var m=mensajesMostrados[i]; if(m.q==="Vos"||m.q==="IAgus") hist.push({role:m.q==="Vos"?"user":"assistant",content:String(m.t).slice(0,300)}); } hist=hist.slice(-4);
-      var resp=await engine.chat.completions.create({ messages:[{role:"system",content:"Sos IAgus, amiga argentina, respondé corto, máximo 2 frases."}].concat(hist), temperature:0.7, max_tokens:200 });
+      var resp=await engine.chat.completions.create({ messages:[{role:"system",content:"Sos IAgus, amiga argentina, respondé corto, máximo 2 frases. Tenés este PDF y memoria, leelo vos y respondé con lo que dice ahí:\n"+memoria.slice(-6000)}].concat(hist), temperature:0.7, max_tokens:200 });
       var t2=resp && resp.choices && resp.choices[0] && resp.choices[0].message && resp.choices[0].message.content; if(t2) return limpiarTexto(t2).slice(0,800); return "No pude generar respuesta local.";
     }catch(e){ return "❌ Modelo local falló: "+e.message; }
   }
-  try{ var g=await hablarConGemini(mensaje, infoInternet); return g; }catch(e){ return "❌ Error Gemini: "+e.message; }
+  try{ var g=await hablarConGemini(mensaje, infoInternet, memoria); return g; }catch(e){ return "❌ Error Gemini: "+e.message; }
 }
 async function responderIA(mensaje){ try{ var r=await hablarConIA(mensaje); agregarMensaje("IAgus", r || "⚠️ No pude responder."); }catch(e){ agregarMensaje("IAgus","⚠️ Error: "+e.message); } }
 async function hablar(){
