@@ -1,4 +1,4 @@
-const CACHE_NAME = 'iagus-v68-shell';
+const CACHE_NAME = 'iagus-v69-shell';
 const APP_SHELL = [
   './',
   './index.html',
