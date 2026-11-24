@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -109,6 +108,9 @@ h3{margin:3px 0;text-align:center}.small{font-size:11px;line-height:1.4}.row{dis
   </section>
   <section id="audioPanel" class="panel hidden">
     <div class="tooltitle">🔊 Lector de textos</div>
+    <input type="file" id="audioPdfFile" accept="application/pdf,.pdf" hidden>
+    <button id="attachAudioPdf" style="margin-bottom:6px">📎 Adjuntar PDF para leer</button>
+    <div id="audioPdfStatus" class="small"></div>
     <textarea id="audioText" style="height:32vh" placeholder="Pegá un texto o cargá un PDF para leerlo en voz alta..."></textarea>
     <div class="row"><label class="small">Velocidad<select id="voiceRate"><option value=".8">Lenta</option><option value="1" selected>Normal</option><option value="1.25">Rápida</option><option value="1.5">Muy rápida</option></select></label><button id="playAudio">▶ Leer</button><button id="pauseAudio">Ⅱ Pausar</button><button id="stopAudio">■ Parar</button></div>
     <div id="audioStatus" class="small"></div>
@@ -231,7 +233,7 @@ async function geminiReply(){
   if(!turns.length||turns[turns.length-1].role!=="user")turns.push({role:"user",parts:[{text:last.text.slice(0,2500)}]});
   else turns[turns.length-1].parts[0].text+="\n"+last.text.slice(0,2500);
   const pdfContext=pdfText.trim() ? ("\n\nDOCUMENTO ADJUNTO ("+pdfFileName+"):\n"+pdfText.slice(0,28000)+"\n[Si el documento supera el límite, aclaralo y no inventes el contenido faltante.]") : "";
-  const system="Sos IAgus, asistente conversacional útil y claro. Hablás en español argentino natural. Usá el historial y la memoria compartida cuando corresponda. No inventes recuerdos ni afirmes que entrenaste el modelo. No generes imágenes: si piden imágenes, indicá que usen Buscar inspiración, que busca material ya existente.\nMEMORIA COMPARTIDA:\n"+memoryText()+pdfContext;
+  const system="Sos IAgus, una amiga argentina que habla normal y fluido como persona por WhatsApp. Solo das información, ayuda a programar o hacés un cuestionario CUANDO te lo piden. Si solo te saludan o charlan, solo charlá normal, no des info que no te pidieron, no des listas, no des definiciones. Si te piden programar, ayudá a programar. Si te piden un cuestionario, hacelo. Si te piden info, dala. Si no te piden nada, solo conversá. NUNCA mandes links. NUNCA uses diálogos predeterminados. No inventes recuerdos. No generes imágenes: si piden imágenes, indicá que usen Buscar inspiración, que busca material ya existente.\nMEMORIA COMPARTIDA:\n"+memoryText()+pdfContext;
   const response=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+MODEL+":generateContent",{
     method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},
     body:JSON.stringify({systemInstruction:{parts:[{text:system}]},contents:turns,generationConfig:{temperature:.7,maxOutputTokens:1200}})
@@ -259,7 +261,7 @@ async function privateReply(){
   if(!engine)throw new Error("Primero tocá Cerebro Privado y esperá a que termine de cargar.");
   const history=currentMessages().slice(-18).map(m=>({role:m.role==="user"?"user":"assistant",content:m.text.slice(0,1500)}));
   const pdfContext=pdfText.trim() ? ("\n\nDOCUMENTO ADJUNTO ("+pdfFileName+"):\n"+pdfText.slice(0,16000)) : "";
-  const result=await engine.chat.completions.create({messages:[{role:"system",content:"Sos IAgus, un asistente claro y amable que habla español argentino. Usá el contexto compartido sin inventar recuerdos.\n"+memoryText()+pdfContext}].concat(history),temperature:.7,max_tokens:700});
+  const result=await engine.chat.completions.create({messages:[{role:"system",content:"Sos IAgus, una amiga argentina que habla normal y fluido. Solo das info, ayuda a programar o cuestionario CUANDO te lo piden, si no, solo conversá. Usá el contexto compartido sin inventar recuerdos.\n"+memoryText()+pdfContext}].concat(history),temperature:.7,max_tokens:700});
   const answer=result.choices?.[0]?.message?.content;
   if(!answer)throw new Error("El modelo local no devolvió texto.");
   return answer;
@@ -296,10 +298,12 @@ async function searchImages(){
   const heading=document.createElement("b");heading.textContent="Galería de imágenes: "+q;container.appendChild(heading);
   const intro=document.createElement("p");intro.textContent="Resultados visuales de Wikimedia Commons mostrados directamente aquí.";container.appendChild(intro);
   const grid=document.createElement("div");grid.id="imageResults";container.appendChild(grid);$("chat").appendChild(container);
+  $("chat").scrollTop=$("chat").scrollHeight;
   try{
     const url="https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=12&gsrsearch="+encoded+"&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=420&format=json&origin=*";
     const r=await fetch(url);if(!r.ok)throw new Error("HTTP "+r.status);
     const data=await r.json();const pages=Object.values(data.query?.pages||{});
+    if(!pages.length){grid.innerHTML="<p>No encontré imágenes de eso, probá con otra palabra.</p>";return;}
     pages.forEach(pg=>{
       const info=pg.imageinfo?.[0];if(!info)return;
       const card=document.createElement("div");card.className="imagecard";
@@ -309,10 +313,11 @@ async function searchImages(){
       const license=document.createElement("div");license.textContent="Licencia: "+(meta.LicenseShortName?.value||"Ver en Wikimedia");card.appendChild(license);
       grid.appendChild(card);
     });
+    remember("La usuaria buscó imágenes de: "+q);
   }catch(e){grid.innerHTML="<p>⚠️ No pude buscar imágenes: "+escapeText(e.message)+"</p>";}
 }
 async function extractPdf(file){
-  if(!window.pdfjsLib)return "No se pudo cargar el lector de PDF.";
+  if(!window.pdfjsLib) return "No se pudo cargar el lector de PDF.";
   const buf=await file.arrayBuffer();
   const pdf=await pdfjsLib.getDocument({data:buf}).promise;
   let full="";
@@ -384,7 +389,7 @@ function timerReset(){timerPause();seconds=totalSeconds;renderTimer();$("timerSt
 function timerSet(sec,label){timerPause();seconds=sec;totalSeconds=sec;renderTimer();$("timerStatus").textContent=label;}
 loadState();
 if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-if(apiKey){$("apiKey").value=apiKey;$("keyStatus").textContent="✅ Tenés clave guardada, ya podés dialogar.";}
+if(apiKey){$("apiKey").value=apiKey;}
 $("saveKey").onclick=()=>{const k=$("apiKey").value.trim();if(!k){$("keyStatus").textContent="Pegá tu clave primero.";return;}apiKey=k;localStorage.setItem(KEY_STORAGE,k);$("keyStatus").textContent="✅ Clave guardada, ya podés dialogar.";};
 $("testKey").onclick=testKey;
 $("send").onclick=sendMessage;
@@ -397,6 +402,18 @@ $("imageQuery").addEventListener("keydown",e=>{if(e.key==="Enter")searchImages()
 $("attachPdf").onclick=()=>$("sidebarPdfFile").click();
 $("sidebarPdfFile").addEventListener("change",e=>{handlePdfFile(e.target.files[0],true);e.target.value="";});
 $("pdfFile").addEventListener("change",e=>{handlePdfFile(e.target.files[0],false);e.target.value="";});
+$("attachAudioPdf").onclick=()=>$("audioPdfFile").click();
+$("audioPdfFile").addEventListener("change",async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  $("audioPdfStatus").textContent="Leyendo PDF...";
+  try{
+    const t=await extractPdf(f);
+    $("audioText").value=t.slice(0,8000);
+    pdfText=t; pdfFileName=f.name;
+    $("audioPdfStatus").textContent="✅ PDF listo: "+f.name+" - Tocá ▶ Leer";
+  }catch(err){ $("audioPdfStatus").textContent="❌ No pude leerlo: "+err.message; }
+  e.target.value="";
+});
 $("readPdf").onclick=()=>{if(!pdfText){$("pdfStatus").textContent="Primero subí un PDF.";return;}$("audioText").value=pdfText.slice(0,8000);document.querySelector('[data-panel="audioPanel"]').click();playAudio();};
 $("copyPdf").onclick=()=>{if(!pdfText)return;navigator.clipboard.writeText(pdfText).then(()=>$("pdfStatus").textContent="✅ Texto copiado");};
 $("playAudio").onclick=playAudio;
