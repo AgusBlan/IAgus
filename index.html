@@ -38,7 +38,7 @@ h3{margin:3px 0;text-align:center}.small{font-size:11px;line-height:1.4}.row{dis
 </head>
 <body>
 <aside id="sidebar">
-  <div class="tool"><h3>🌸 IAgus</h3><div class="small" style="text-align:center">Asistente · historial guardado en este dispositivo</div></div>
+  <div class="tool"><h3>🌸 IAgus</h3><div class="small" style="text-align:center">Asistente real con Gemini · recuerda todo</div></div>
   <div class="tool">
     <div class="row"><button id="fastMode">⚡ Rápido</button><button id="privateMode">🔒 Privado</button></div>
     <div id="modeInfo" class="small" style="margin-top:7px">Rápido: responde Gemini por internet.</div>
@@ -47,7 +47,7 @@ h3{margin:3px 0;text-align:center}.small{font-size:11px;line-height:1.4}.row{dis
     <div class="tooltitle">🔑 Conexión con Gemini</div>
     <input id="apiKey" type="password" autocomplete="off" placeholder="Pegá tu clave de Gemini">
     <div class="row" style="margin-top:6px"><button id="saveKey">Activar clave</button><button id="testKey">Probar conexión</button></div>
-    <div id="keyStatus" class="small" style="margin-top:5px">La clave queda solo en esta pestaña; no se guarda en el historial.</div>
+    <div id="keyStatus" class="small" style="margin-top:5px">Tu clave queda guardada en este celu, no tenés que pegarla cada vez.</div>
   </div>
   <div class="tool">
     <div class="tooltitle">💬 Conversaciones</div>
@@ -63,8 +63,8 @@ h3{margin:3px 0;text-align:center}.small{font-size:11px;line-height:1.4}.row{dis
   <div class="tool">
     <div class="tooltitle">🖼️ Buscar inspiración</div>
     <input id="imageQuery" placeholder="Ej.: habitación rosa kawaii">
-    <button id="searchImages" style="width:100%;margin-top:6px">🔍 Buscar imágenes existentes</button>
-    <div class="small" style="margin-top:5px">Imágenes existentes de Internet mostradas directamente en una galería. No genera imágenes ni muestra una lista de enlaces.</div>
+    <button id="searchImages" style="width:100%;margin-top:6px">🔍 Buscar imágenes</button>
+    <div class="small" style="margin-top:5px">Galería con imágenes reales, no links, no Pollinations.</div>
   </div>
   <div class="tool">
     <div class="tooltitle">🍅 Pomodoro</div>
@@ -87,7 +87,6 @@ h3{margin:3px 0;text-align:center}.small{font-size:11px;line-height:1.4}.row{dis
   </div>
   <button id="clearData" style="background:#ffcf9e">Borrar historial y datos locales</button>
 </aside>
-
 <main id="main">
   <div id="tools">
     <button data-panel="chatPanel">💬 Chat</button>
@@ -103,7 +102,7 @@ h3{margin:3px 0;text-align:center}.small{font-size:11px;line-height:1.4}.row{dis
   <section id="pdfPanel" class="panel hidden">
     <div class="tooltitle">📄 Lector PDF</div>
     <input type="file" id="pdfFile" accept="application/pdf,.pdf">
-    <div id="pdfStatus" class="small">Subí un PDF con texto seleccionable. Los PDF escaneados como imagen pueden necesitar OCR y no se extraen automáticamente.</div>
+    <div id="pdfStatus" class="small">Subí un PDF con texto seleccionable.</div>
     <div class="row" style="margin:8px 0"><button id="readPdf">🔊 Leer PDF</button><button id="copyPdf">Copiar texto</button></div>
     <div id="pdfViewer">Todavía no hay ningún PDF cargado.</div>
   </section>
@@ -120,14 +119,14 @@ h3{margin:3px 0;text-align:center}.small{font-size:11px;line-height:1.4}.row{dis
     <iframe id="youtubeFrame" title="Reproductor de YouTube" width="100%" height="280" style="border:0;border-radius:12px;margin-top:10px" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
   </section>
 </main>
-
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
 const STORAGE="iagus_stable_v3";
-const MODEL="gemini-3.8-flash";
-let apiKey="",mode="rapido",engine=null,loadingLocal=false,pdfText="",pdfFileName="",speechChunks=[],speechIndex=0,timerId=null,seconds=1500,totalSeconds=1500;
-let state={chats:{},active:"general",tasks:[],memory:[]};
+const KEY_STORAGE="iagus_gemini_key";
+const MODEL="gemini-2.0-flash";
+let apiKey=localStorage.getItem(KEY_STORAGE)||"",mode="rapido",engine=null,loadingLocal=false,pdfText="",pdfFileName="",speechChunks=[],speechIndex=0,timerId=null,seconds=1500,totalSeconds=1500;
+let state={chats:{},active:"general",tasks:[],memory:[],pdfs:{}};
 function loadState(){
   try{const s=JSON.parse(localStorage.getItem(STORAGE)||"{}");state={...state,...s};}catch(e){}
   if(!state.chats||typeof state.chats!=="object")state.chats={};
@@ -135,6 +134,7 @@ function loadState(){
   if(!state.active||!state.chats[state.active])state.active="general";
   if(!Array.isArray(state.tasks))state.tasks=[];
   if(!Array.isArray(state.memory))state.memory=[];
+  if(!state.pdfs||typeof state.pdfs!=="object")state.pdfs={};
 }
 function saveState(){try{localStorage.setItem(STORAGE,JSON.stringify(state));}catch(e){$("status").textContent="No hay espacio suficiente para guardar todo el historial.";}}
 function currentMessages(){return state.chats[state.active]||(state.chats[state.active]=[]);}
@@ -159,7 +159,7 @@ function sanitizeAssistantHTML(html){
   const t=document.createElement("template");t.innerHTML=String(html||"");
   t.content.querySelectorAll("*").forEach(el=>{
     const tag=el.tagName;
-    if(!["A","IMG","B","STRONG","BR","EM","I"].includes(tag)){el.replaceWith(document.createTextNode(el.textContent||""));return;}
+    if(!["A","IMG","B","STRONG","BR","EM","I","DIV","P"].includes(tag)){el.replaceWith(document.createTextNode(el.textContent||""));return;}
     if(tag==="IMG"){
       let u;try{u=new URL(el.getAttribute("src")||"");}catch(e){}
       if(!u||!["upload.wikimedia.org","commons.wikimedia.org"].includes(u.hostname)){el.remove();return;}
@@ -184,21 +184,30 @@ function renderChatList(){
   const box=$("chatList");box.replaceChildren();
   Object.keys(state.chats).forEach(id=>{
     const b=document.createElement("button");b.className="chatitem";b.textContent=(id===state.active?"● ":"")+((state.chats[id][0]?.text||"Nuevo chat").slice(0,28));
-    b.addEventListener("click",()=>{state.active=id;saveState();renderChatList();renderChat();});box.appendChild(b);
+    b.addEventListener("click",()=>{state.active=id;saveState();renderChatList();renderChat();updatePdfStatus();});box.appendChild(b);
   });
 }
 function newChat(){
-  const id="chat_"+Date.now();state.chats[id]=[];state.active=id;saveState();renderChatList();renderChat();
+  const id="chat_"+Date.now();state.chats[id]=[];state.active=id;saveState();renderChatList();renderChat();updatePdfStatus();
 }
+// MEMORIA DE TODOS LOS CHATS + PASADO
 function memoryText(){
-  const recent=state.memory.slice(-35).map(x=>x.text);
-  return recent.join("\n").slice(-7000);
+  let all=[];
+  Object.keys(state.chats).forEach(chatId=>{
+    (state.chats[chatId]||[]).forEach(m=>{
+      let t=String(m.text||"").replace(/<[^>]*>/g," ").trim();
+      if(t.length>10) all.push((chatId===state.active?"[Chat actual] ":"[Otro chat] ")+t.slice(0,300));
+    });
+  });
+  let fromMemory=state.memory.map(x=>x.text);
+  let combined=[...fromMemory,...all.slice(-60)];
+  return combined.join("\n").slice(-9000);
 }
 function remember(text){
   const clean=String(text||"").trim().slice(0,400);
   if(!clean)return;
   if(!state.memory.some(x=>x.text===clean))state.memory.push({text:clean,at:Date.now()});
-  if(state.memory.length>120)state.memory=state.memory.slice(-120);
+  if(state.memory.length>200)state.memory=state.memory.slice(-200);
   saveState();
 }
 function mergeTurns(messages){
@@ -223,7 +232,7 @@ async function geminiReply(){
   if(!turns.length||turns[turns.length-1].role!=="user")turns.push({role:"user",parts:[{text:last.text.slice(0,2500)}]});
   else turns[turns.length-1].parts[0].text+="\n"+last.text.slice(0,2500);
   const pdfContext=pdfText.trim() ? ("\n\nDOCUMENTO ADJUNTO ("+pdfFileName+"):\n"+pdfText.slice(0,28000)+"\n[Si el documento supera el límite, aclaralo y no inventes el contenido faltante.]") : "";
-  const system="Sos IAgus, asistente conversacional útil y claro. Hablás en español argentino natural. Usá el historial y la memoria compartida cuando corresponda. No inventes recuerdos ni afirmes que entrenaste el modelo. No generes imágenes: si piden imágenes, indicá que usen Buscar inspiración, que busca material ya existente.\nMEMORIA COMPARTIDA:\n"+memoryText()+pdfContext;
+  const system="Sos IAgus, asistente conversacional útil y claro. Hablás en español argentino natural. Usá el historial y la memoria compartida de TODOS los chats cuando corresponda, aunque la conversación sea en otro chat. Recordá cosas que hablaron antes, gustos, tareas, nombres. No inventes recuerdos. No generes imágenes con IA: si piden imágenes, indicá que usen Buscar inspiración, que busca material ya existente.\nMEMORIA DE TODOS LOS CHATS Y PASADO:\n"+memoryText()+pdfContext;
   const response=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+MODEL+":generateContent",{
     method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},
     body:JSON.stringify({systemInstruction:{parts:[{text:system}]},contents:turns,generationConfig:{temperature:.7,maxOutputTokens:1200}})
@@ -251,7 +260,7 @@ async function privateReply(){
   if(!engine)throw new Error("Primero tocá Cerebro Privado y esperá a que termine de cargar.");
   const history=currentMessages().slice(-18).map(m=>({role:m.role==="user"?"user":"assistant",content:m.text.slice(0,1500)}));
   const pdfContext=pdfText.trim() ? ("\n\nDOCUMENTO ADJUNTO ("+pdfFileName+"):\n"+pdfText.slice(0,16000)) : "";
-  const result=await engine.chat.completions.create({messages:[{role:"system",content:"Sos IAgus, un asistente claro y amable que habla español argentino. Usá el contexto compartido sin inventar recuerdos.\n"+memoryText()+pdfContext}].concat(history),temperature:.7,max_tokens:700});
+  const result=await engine.chat.completions.create({messages:[{role:"system",content:"Sos IAgus, un asistente claro y amable que habla español argentino. Usá el contexto de todos los chats sin inventar recuerdos.\n"+memoryText()+pdfContext}].concat(history),temperature:.7,max_tokens:700});
   const answer=result.choices?.[0]?.message?.content;
   if(!answer)throw new Error("El modelo local no devolvió texto.");
   return answer;
@@ -261,8 +270,8 @@ async function sendMessage(){
   if(sending)return;
   const field=$("message"),text=field.value.trim();if(!text)return;
   field.value="";addMessage("user",text);remember("La usuaria comentó: "+text);
-  if(/\b(imagen(es)?|fotos?|fotograf[ií]as?|dibuj(os?|ame)|ilustraci[oó]n(es)?|avatar(es)?|wallpapers?|fondos? de pantalla|inspiraci[oó]n visual|referencias visuales)\b/i.test(text)){
-    $("imageQuery").value=text;await searchImages();return;
+  if(/\b(imagen(es)?|fotos?|fotograf[ií]as?|dibuj(os?|ame)|ilustraci[oó]n(es)?|avatar(es)?|wallpapers?|fondos? de pantalla|inspiraci[oó]n visual|referencias visuales|buscame (una )?imagen|mostrame (una )?imagen)\b/i.test(text)){
+    $("imageQuery").value=text.replace(/buscame|mostrame|una imagen|imagenes|imagen/gi,"").trim()||text;await searchImages();return;
   }
   sending=true;$("send").disabled=true;$("status").textContent=mode==="privado"?"🔒 Pensando en el dispositivo...":"⚡ IAgus está pensando...";
   try{const answer=mode==="privado"?await privateReply():await geminiReply();addMessage("assistant",answer);remember("IAgus respondió: "+answer.slice(0,220));}
@@ -270,135 +279,26 @@ async function sendMessage(){
   finally{sending=false;$("send").disabled=false;$("status").textContent=mode==="privado"?"🔒 Modo Privado":"⚡ Modo Rápido";}
 }
 async function testKey(){
-  const k=$("apiKey").value.trim();if(k)apiKey=k;
+  const k=$("apiKey").value.trim();if(k){apiKey=k;localStorage.setItem(KEY_STORAGE,k);}
   if(!apiKey){$("keyStatus").textContent="Pegá tu clave primero.";return;}
   $("keyStatus").textContent="Probando...";
   try{
     const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+MODEL+":generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},body:JSON.stringify({contents:[{parts:[{text:"Respondé solo OK"}]}],generationConfig:{maxOutputTokens:8}})});
     const d=await r.json().catch(()=>({}));
     if(!r.ok)throw new Error("HTTP "+r.status+": "+(d.error?.message||"Error de conexión"));
-    $("keyStatus").textContent="✅ Gemini respondió. La clave funciona.";
+    $("keyStatus").textContent="✅ Gemini respondió. La clave funciona y quedó guardada.";
   }catch(e){$("keyStatus").textContent="❌ "+e.message;}
 }
+// BUSCAR IMAGENES - GALERIA REAL, NO LINKS, NO POLLINATIONS
 async function searchImages(){
   const q=$("imageQuery").value.trim();if(!q){$("imageQuery").focus();return;}
-  addMessage("assistant","🔎 Buscando imágenes existentes sobre: "+q);
-  const encoded=encodeURIComponent(q);
   const container=document.createElement("div");container.className="msg ai";
-  const heading=document.createElement("b");heading.textContent="Galería de imágenes: "+q;container.appendChild(heading);
-  const intro=document.createElement("p");intro.textContent="Resultados visuales de Wikimedia Commons mostrados directamente aquí.";container.appendChild(intro);
+  const heading=document.createElement("b");heading.textContent="Galería: "+q;container.appendChild(heading);
+  const intro=document.createElement("p");intro.textContent="Imágenes reales de Wikimedia Commons, mostradas acá mismo.";container.appendChild(intro);
   const grid=document.createElement("div");grid.id="imageResults";container.appendChild(grid);$("chat").appendChild(container);
+  $("chat").scrollTop=$("chat").scrollHeight;
   try{
-    const url="https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=12&gsrsearch="+encoded+"&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=420&format=json&origin=*";
+    const url="https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=12&gsrsearch="+encodeURIComponent(q)+"&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=420&format=json&origin=*";
     const r=await fetch(url);if(!r.ok)throw new Error("HTTP "+r.status);
     const data=await r.json();const pages=Object.values(data.query?.pages||{});
-    pages.forEach(pg=>{
-      const info=pg.imageinfo?.[0];if(!info)return;
-      const card=document.createElement("div");card.className="imagecard";
-      const img=document.createElement("img");img.src=info.thumburl||info.url;img.alt=pg.title||"Imagen";img.loading="lazy";card.appendChild(img);
-      const title=document.createElement("div");title.textContent=(pg.title||"Imagen").replace(/^File:/,"");card.appendChild(title);
-      const meta=info.extmetadata||{};const author=document.createElement("div");author.textContent="Autoría: "+(meta.Artist?.value||"Consultar fuente").replace(/<[^>]*>/g," ").slice(0,130);card.appendChild(author);
-      const license=document.createElement("div");license.textContent="Licencia: "+(meta.LicenseShortName?.value||"Consultar fuente");card.appendChild(license);
-      grid.appendChild(card);
-    });
-    if(!grid.children.length)grid.textContent="No encontré imágenes para esa búsqueda. Probá con otras palabras.";
-  }catch(e){grid.textContent="No pude cargar las imágenes ahora. Revisá tu conexión e intentá nuevamente.";}
-  $("chat").scrollTop=$("chat").scrollHeight;
-}
-function renderTasks(){
-  const box=$("taskList");box.replaceChildren();
-  state.tasks.forEach((t,i)=>{
-    const row=document.createElement("div");row.className="task";
-    const check=document.createElement("input");check.type="checkbox";check.checked=!!t.done;check.addEventListener("change",()=>{t.done=check.checked;saveState();renderTasks();});
-    const label=document.createElement("span");label.textContent=t.text;if(t.done)label.style.textDecoration="line-through";
-    const del=document.createElement("button");del.textContent="×";del.addEventListener("click",()=>{state.tasks.splice(i,1);saveState();renderTasks();});
-    row.append(check,label,del);box.appendChild(row);
-  });
-}
-function addTask(){const text=$("taskInput").value.trim();if(!text)return;state.tasks.push({text,done:false});$("taskInput").value="";saveState();renderTasks();}
-function renderTimer(){const m=Math.floor(seconds/60),s=seconds%60;$("timer").textContent=String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");}
-function setTimer(n){clearInterval(timerId);timerId=null;seconds=n;totalSeconds=n;renderTimer();$("timerStatus").textContent="Listo";}
-function startTimer(){if(timerId)return;$("timerStatus").textContent="En curso";timerId=setInterval(()=>{seconds--;renderTimer();if(seconds<=0){clearInterval(timerId);timerId=null;$("timerStatus").textContent="¡Tiempo terminado!";}},1000);}
-function splitSpeech(text){const out=[];let rest=text;while(rest.length>850){let cut=rest.lastIndexOf(" ",850);if(cut<400)cut=850;out.push(rest.slice(0,cut));rest=rest.slice(cut).trim();}if(rest)out.push(rest);return out;}
-function speakText(text){
-  if(!("speechSynthesis" in window)){ $("audioStatus").textContent="Este navegador no admite lectura en voz alta.";return;}
-  speechSynthesis.cancel();speechChunks=splitSpeech(text);speechIndex=0;
-  if(!speechChunks.length)return;
-  $("audioStatus").textContent="Leyendo "+speechChunks.length+" fragmentos...";
-  const next=()=>{if(speechIndex>=speechChunks.length){$("audioStatus").textContent="Lectura terminada.";return;}
-    const u=new SpeechSynthesisUtterance(speechChunks[speechIndex++]);u.lang="es-AR";u.rate=Number($("voiceRate").value)||1;u.onend=next;u.onerror=()=>{$("audioStatus").textContent="La lectura se interrumpió.";};speechSynthesis.speak(u);};
-  next();
-}
-async function loadPDF(file){
-  if(!file)return;
-  pdfFileName=file.name||"documento.pdf";
-  $("sidebarPdfStatus").textContent="Cargando "+pdfFileName+"...";
-  $("sidebarPdfFile").value="";
-  if(!window.pdfjsLib){$("pdfStatus").textContent="No se pudo cargar PDF.js. Revisá la conexión y recargá.";return;}
-  $("pdfStatus").textContent="Leyendo PDF...";
-  $("pdfViewer").textContent="Cargando...";
-  try{
-    pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-    const doc=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
-    const pages=[];
-    for(let n=1;n<=doc.numPages;n++){
-      const page=await doc.getPage(n),content=await page.getTextContent();
-      const items=content.items||[];
-      let lines=[],currentY=null,line="";
-      for(const item of items){
-        const y=Math.round(item.transform?.[5]||0);
-        if(currentY!==null&&Math.abs(y-currentY)>3){if(line.trim())lines.push(line.trim());line="";}
-        line+=(line?" ":"")+item.str;currentY=y;
-      }
-      if(line.trim())lines.push(line.trim());
-      pages.push("Página "+n+"\n"+lines.join("\n"));
-    }
-    pdfText=pages.join("\n\n");
-    $("pdfViewer").textContent=pdfText||"Este PDF no contiene texto seleccionable. Si es un escaneo, hace falta OCR.";
-    $("audioText").value=pdfText;
-    $("pdfStatus").textContent="✅ PDF cargado: "+doc.numPages+" páginas · "+pdfText.length+" caracteres.";
-    $("sidebarPdfStatus").textContent=pdfText.trim() ? "✅ "+pdfFileName+" adjuntado. Ya podés preguntarle a IAgus sobre su contenido." : "⚠️ "+pdfFileName+" no tiene texto seleccionable; puede necesitar OCR.";
-    if(!pdfText.trim())$("pdfStatus").textContent="El PDF parece escaneado o no contiene texto seleccionable. Este lector no incluye OCR.";
-  }catch(e){$("pdfStatus").textContent="No pude leer el PDF: "+e.message;$("sidebarPdfStatus").textContent="Error al adjuntar el PDF.";$("pdfViewer").textContent="";}
-}
-function showPanel(id){["chatPanel","pdfPanel","audioPanel","musicPanel"].forEach(pid=>$(pid).classList.toggle("hidden",pid!==id));if(id==="chatPanel")$("chatPanel").style.display="flex";}
-function playYoutube(){
-  const value=$("youtubeUrl").value.trim();if(!value)return;
-  let id=null;try{const u=new URL(value);if(u.hostname.includes("youtu.be"))id=u.pathname.slice(1);else id=u.searchParams.get("v")||u.pathname.match(/\/embed\/([^/]+)/)?.[1]||u.pathname.match(/\/shorts\/([^/]+)/)?.[1];}catch(e){}
-  if(id&&/^[\w-]{11}$/.test(id))$("youtubeFrame").src="https://www.youtube.com/embed/"+id;
-  else $("youtubeFrame").src="https://www.youtube.com/embed?listType=search&list="+encodeURIComponent(value);
-}
-$("saveKey").addEventListener("click",()=>{apiKey=$("apiKey").value.trim();$("keyStatus").textContent=apiKey?"✅ Clave cargada solo en esta sesión.":"Pegá una clave válida.";});
-$("testKey").addEventListener("click",testKey);
-$("fastMode").addEventListener("click",()=>{mode="rapido";$("modeInfo").textContent="Rápido: Gemini responde por internet y comparte el historial guardado."; $("status").textContent="⚡ Modo Rápido";});
-$("privateMode").addEventListener("click",()=>{mode="privado";$("modeInfo").textContent="Privado: el modelo se descarga y responde en este dispositivo.";loadPrivate();});
-$("send").addEventListener("click",sendMessage);
-$("message").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}});
-$("newChat").addEventListener("click",newChat);
-$("searchImages").addEventListener("click",searchImages);
-$("imageQuery").addEventListener("keydown",e=>{if(e.key==="Enter")searchImages();});
-$("addTask").addEventListener("click",addTask);
-$("taskInput").addEventListener("keydown",e=>{if(e.key==="Enter")addTask();});
-$("timerStart").addEventListener("click",startTimer);
-$("timerPause").addEventListener("click",()=>{clearInterval(timerId);timerId=null;$("timerStatus").textContent="Pausado";});
-$("timerReset").addEventListener("click",()=>setTimer(totalSeconds));
-$("timer25").addEventListener("click",()=>setTimer(1500));
-$("timer5").addEventListener("click",()=>setTimer(300));
-$("playAudio").addEventListener("click",()=>speakText($("audioText").value));
-$("pauseAudio").addEventListener("click",()=>{if(speechSynthesis.paused)speechSynthesis.resume();else speechSynthesis.pause();});
-$("stopAudio").addEventListener("click",()=>{speechSynthesis.cancel();$("audioStatus").textContent="Lectura detenida.";});
-$("pdfFile").addEventListener("change",e=>loadPDF(e.target.files[0]));
-$("attachPdf").addEventListener("click",()=>$("sidebarPdfFile").click());
-$("sidebarPdfFile").addEventListener("change",e=>{const file=e.target.files[0];if(file){loadPDF(file);showPanel("chatPanel");}});
-$("readPdf").addEventListener("click",()=>{if(!pdfText){$("pdfStatus").textContent="Primero cargá un PDF.";return;}showPanel("audioPanel");speakText(pdfText);});
-$("copyPdf").addEventListener("click",async()=>{if(!pdfText)return;try{await navigator.clipboard.writeText(pdfText);$("pdfStatus").textContent="Texto copiado.";}catch(e){$("pdfStatus").textContent="El navegador no permitió copiar automáticamente."; }});
-$("playYoutube").addEventListener("click",playYoutube);
-document.querySelectorAll("[data-panel]").forEach(b=>b.addEventListener("click",()=>showPanel(b.dataset.panel)));
-$("bgColor").addEventListener("input",e=>document.documentElement.style.setProperty("--bg",e.target.value));
-$("pinkColor").addEventListener("input",e=>document.documentElement.style.setProperty("--pink",e.target.value));
-$("hotColor").addEventListener("input",e=>document.documentElement.style.setProperty("--hot",e.target.value));
-$("clearData").addEventListener("click",()=>{if(confirm("¿Borrar todos los chats, memoria y tareas guardados en este navegador?")){localStorage.removeItem(STORAGE);state={chats:{general:[]},active:"general",tasks:[],memory:[]};renderChat();renderChatList();renderTasks();}});
-loadState();renderChat();renderChatList();renderTasks();renderTimer();
-</script>
-</body>
-</html>
+    if(!pages.length){grid.innerHTML="<p>No encontré imágenes de eso, probá con otra palabr
