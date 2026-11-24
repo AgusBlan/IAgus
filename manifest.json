@@ -1,7 +1,7 @@
 {
   "name": "IAgus",
   "short_name": "IAgus",
-  "start_url": "./?v=86",
+  "start_url": "./?v=89",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
