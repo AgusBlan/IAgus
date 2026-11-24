@@ -6,7 +6,6 @@
 <title>IAgus</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffc7dd">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial;background:#fff6f8;display:flex;min-height:100vh;height:100dvh;overflow:hidden}
@@ -26,7 +25,7 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 </head>
 <body>
 <div class="sidebar" id="sidebar">
-<h3 style="text-align:center;background:white;border-radius:15px;padding:8px;margin:0">🌸 IAgus<br><span style="font-size:11px">v82 limpio</span></h3>
+<h3 style="text-align:center;background:white;border-radius:15px;padding:8px;margin:0">🌸 IAgus<br><span style="font-size:11px">v84 - Privado sin lag</span></h3>
 <div style="display:flex;gap:6px">
 <button class="modo-btn" id="btnAdulta" style="background:#a8e0ff" onclick="cambiarModo('rapido')">⚡ Rápido</button>
 <button class="modo-btn" id="btnPrivado" style="background:#b8f1cc" onclick="cambiarModo('privado')">🔒 Privado</button>
@@ -41,6 +40,12 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 <button class="btn" style="background:#fff0a8" onclick="probarKey()">🧪 Probar si anda mi llave</button>
 <div id="keyEstado" style="font-size:11px;text-align:center;margin-top:4px"></div>
 </div>
+<div class="box">
+<b style="font-size:12px">🌐 Buscar en internet - Wiki + DuckDuckGo</b>
+<input id="buscarInternetInput" placeholder="Ej: fotosíntesis, Clefairy, Argentina...">
+<button class="btn" style="background:#a8d8ff" onclick="buscarInternetBoton()">🌐 Buscar en Wikipedia + DuckDuckGo</button>
+<div id="resultadoInternet" style="font-size:12px;margin-top:6px;white-space:pre-wrap"></div>
+</div>
 <button class="btn" style="background:white" onclick="toggleSidebar()">◀️ Esconder menú</button>
 <div id="listaChats"></div>
 <button class="btn" style="background:white" onclick="crearChat()">+ Crear chat</button>
@@ -50,11 +55,11 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 <div id="panelChat" style="flex:1;display:flex;flex-direction:column;min-height:0;margin-top:8px">
 <div id="chat"></div>
 <p id="estadoIA" style="font-size:13px;text-align:center;font-weight:bold"></p>
-<textarea id="entrada" placeholder="Hablame..."></textarea>
+<textarea id="entrada" placeholder="Hablame... Ej: Qué es la fotosíntesis?"></textarea>
 <button class="btn" id="btnEnviar" style="background:#ff8fb8;color:white" onclick="hablar()">ENVIAR</button>
 <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
 <button class="btn" style="background:#b8f1cc;width:auto" onclick="cargarIA()">⬇️ Cerebro Privado</button>
-<button class="btn" style="background:#a8d8ff;width:auto" id="btnAudio2" onclick="grabarAudio()">🎤 Grabar</button>
+<button class="btn" style="background:#a8d8ff;width:auto" onclick="buscarInternetBoton()">🌐 Buscar en internet</button>
 <button class="btn" style="background:#e2c6ff;width:auto" onclick="leerUltimo()">🔊 Leeme lo último</button>
 </div>
 </div>
@@ -107,6 +112,67 @@ function toggleSidebar(){
   s.style.display = ocultar ? "none" : "flex";
   r.style.display = ocultar ? "none" : "block";
 }
+async function buscarEnInternet(pregunta){
+  var q = String(pregunta || "").trim();
+  if(!q) return "";
+  var qWiki = q.split(" ").join("_");
+  var texto = "";
+  try{
+    var rWiki = await fetch("https://es.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(qWiki));
+    if(rWiki.ok){
+      var dWiki = await rWiki.json();
+      if(dWiki.extract) texto += "Wikipedia - " + (dWiki.title || q) + ": " + dWiki.extract + "\n\n";
+      if(dWiki.content_urls && dWiki.content_urls.desktop && dWiki.content_urls.desktop.page) texto += "Fuente Wikipedia: " + dWiki.content_urls.desktop.page + "\n\n";
+    }
+  }catch(e){}
+  try{
+    var rDDG = await fetch("https://api.duckduckgo.com/?q=" + encodeURIComponent(q) + "&format=json&no_html=1&skip_disambig=1");
+    if(rDDG.ok){
+      var dDDG = await rDDG.json();
+      if(dDDG.AbstractText) texto += "DuckDuckGo: " + dDDG.AbstractText + "\n\n";
+      if(dDDG.AbstractURL) texto += "Fuente DuckDuckGo: " + dDDG.AbstractURL + "\n\n";
+      if(dDDG.RelatedTopics && dDDG.RelatedTopics.length){
+        texto += "Temas relacionados: ";
+        for(var i=0;i<Math.min(3, dDDG.RelatedTopics.length);i++){
+          var t = dDDG.RelatedTopics[i];
+          if(t && t.Text) texto += t.Text + " | ";
+        }
+        texto += "\n";
+      }
+    }
+  }catch(e){}
+  if(!texto) texto = "No encontré nada en Wikipedia ni en DuckDuckGo para: " + q;
+  return texto.slice(0, 4000);
+}
+async function buscarInternetBoton(){
+  var q = document.getElementById("buscarInternetInput").value.trim() || document.getElementById("entrada").value.trim();
+  if(!q){ alert("Escribí qué querés buscar"); return; }
+  document.getElementById("resultadoInternet").innerText = "Buscando en Wikipedia + DuckDuckGo...";
+  document.getElementById("estadoIA").innerText = "🌐 Buscando en Wikipedia + DuckDuckGo...";
+  var res = await buscarEnInternet(q);
+  document.getElementById("resultadoInternet").innerText = res;
+  agregarMensaje("IAgus", "🌐 Busqué en Wikipedia + DuckDuckGo sobre: " + q + "\n\n" + res);
+  document.getElementById("estadoIA").innerText = "🌐 Listo";
+  document.getElementById("buscarInternetInput").value = "";
+}
+function necesitaInternet(mensaje){
+  var m = String(mensaje || "").toLowerCase();
+  if(m.indexOf("qué es") !== -1) return true;
+  if(m.indexOf("que es") !== -1) return true;
+  if(m.indexOf("quién") !== -1) return true;
+  if(m.indexOf("quien") !== -1) return true;
+  if(m.indexOf("cuándo") !== -1) return true;
+  if(m.indexOf("cuando") !== -1) return true;
+  if(m.indexOf("dónde") !== -1) return true;
+  if(m.indexOf("donde") !== -1) return true;
+  if(m.indexOf("buscá") !== -1) return true;
+  if(m.indexOf("busca") !== -1) return true;
+  if(m.indexOf("?") !== -1) return true;
+  if(m.indexOf("significa") !== -1) return true;
+  if(m.indexOf("explícame") !== -1) return true;
+  if(m.indexOf("explicame") !== -1) return true;
+  return false;
+}
 var geminiKeyEnMemoria = "";
 var modoActual = "rapido";
 var chats = {};
@@ -145,7 +211,7 @@ function construirMemoria(){
   var partes=[];
   if(miPerfil) partes.push("Perfil: "+miPerfil);
   for(var i=0;i<memoriaAgus.length;i++){ if(memoriaAgus[i].texto) partes.push(memoriaAgus[i].texto); }
-  return partes.join("\n").slice(-8000);
+  return partes.join("\n").slice(-2000);
 }
 function agregarMensaje(quien, texto){
   var item={q:quien, t:String(texto), fecha:new Date().toISOString()};
@@ -196,7 +262,7 @@ function cambiarModo(modo){
   modoActual = modo==="privado" ? "privado" : "rapido";
   document.getElementById("btnAdulta").classList.toggle("modo-activo", modoActual==="rapido");
   document.getElementById("btnPrivado").classList.toggle("modo-activo", modoActual==="privado");
-  document.getElementById("modoTexto").innerText = modoActual==="privado" ? "🔒 Privado: responde en tu tablet" : "⚡ Rápido: responde con Gemini";
+  document.getElementById("modoTexto").innerText = modoActual==="privado" ? "🔒 Privado: responde en tu tablet + busca en Wiki/DDG" : "⚡ Rápido: responde con Gemini + busca en Wiki/DDG";
   document.getElementById("estadoIA").innerText = modoActual==="privado" ? (engine ? "🔒 Privado listo" : "🔒 Cargá el Cerebro") : "⚡ Modo Rápido";
 }
 function guardarKey(){
@@ -223,7 +289,7 @@ async function probarKey(){
     }
   }catch(e){ document.getElementById("keyEstado").innerText="❌ No pude conectar: "+e.message; }
 }
-async function hablarConGemini(mensaje){
+async function hablarConGemini(mensaje, infoInternet){
   var key=geminiKeyEnMemoria || document.getElementById("geminiKey").value.trim();
   if(!key) return "❌ Pegá tu llave en Rápido y tocá Activar llave.";
   geminiKeyEnMemoria=key;
@@ -242,7 +308,7 @@ async function hablarConGemini(mensaje){
     method:"POST",
     headers:{"Content-Type":"application/json","x-goog-api-key":key},
     body:JSON.stringify({
-      systemInstruction:{parts:[{text:"Sos IAgus, una amiga argentina que habla normal por WhatsApp. Solo das info o cuestionario cuando te lo piden. Si solo charlan, solo charlá. Nunca mandes links."}]},
+      systemInstruction:{parts:[{text:"Sos IAgus, amiga argentina, hablá normal. Usá esta info de Wikipedia + DuckDuckGo cuando venga, no inventes. Info de internet:\n"+(infoInternet||"Sin info de internet.")]},
       contents:historial,
       generationConfig:{temperature:0.7, maxOutputTokens:1000}
     })
@@ -260,27 +326,37 @@ async function hablarConGemini(mensaje){
 }
 async function hablarConIA(mensaje){
   var memoria=construirMemoria();
+  var infoInternet = "";
+  if(necesitaInternet(mensaje)){
+    document.getElementById("estadoIA").innerText = "🌐 Buscando en Wikipedia + DuckDuckGo...";
+    infoInternet = await buscarEnInternet(mensaje);
+  }
   if(modoActual==="privado"){
+    if(infoInternet && necesitaInternet(mensaje)){
+      return "🌐 Encontré esto en Wikipedia + DuckDuckGo, sin usar el cerebro para que no lagee:\n\n" + infoInternet;
+    }
     if(!engine) return "🔒 Tocá Descargar Cerebro Privado y esperá a ✅ Privado listo.";
     try{
       var hist=[];
       for(var i=0;i<mensajesMostrados.length;i++){
         var m=mensajesMostrados[i];
-        if(m.q==="Vos" || m.q==="IAgus") hist.push({role:m.q==="Vos"?"user":"assistant", content:String(m.t).slice(0,1000)});
+        if(m.q==="Vos" || m.q==="IAgus") hist.push({role:m.q==="Vos"?"user":"assistant", content:String(m.t).slice(0,300)});
       }
-      hist=hist.slice(-10);
+      hist=hist.slice(-4);
       var resp=await engine.chat.completions.create({
-        messages:[{role:"system", content:"Sos IAgus, amiga argentina, hablá normal. Memoria: "+memoria}].concat(hist),
+        messages:[{role:"system", content:"Sos IAgus, amiga argentina, respondé corto, máximo 2 frases."}].concat(hist),
         temperature:0.7,
-        max_tokens:500
+        max_tokens:200
       });
       var t2=resp && resp.choices && resp.choices[0] && resp.choices[0].message && resp.choices[0].message.content;
-      if(t2) return limpiarTexto(t2).slice(0,1600);
+      if(t2) return limpiarTexto(t2).slice(0,800);
       return "No pude generar respuesta local.";
-    }catch(e){ return "❌ Modelo local falló: "+e.message; }
+    }catch(e){
+      return "❌ Modelo local falló, la tablet no lo bancó: "+e.message;
+    }
   }
   try{
-    var g=await hablarConGemini(mensaje);
+    var g=await hablarConGemini(mensaje, infoInternet);
     return g;
   }catch(e){ return "❌ Error Gemini: "+e.message; }
 }
@@ -306,12 +382,14 @@ async function hablar(){
   document.getElementById("estadoIA").innerText = modoActual==="privado" ? "🔒 Modo Privado" : "⚡ Modo Rápido";
   if(boton) boton.disabled=false;
 }
-function grabarAudio(){ alert("Grabar todavía no está en esta versión limpia, primero arreglamos ENVIAR."); }
 function leerUltimo(){
   try{ var u=new SpeechSynthesisUtterance(document.getElementById("chat").innerText.slice(-400)); u.lang="es-AR"; speechSynthesis.speak(u); }catch(e){}
 }
 document.getElementById("entrada").addEventListener("keydown", function(e){
   if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); hablar(); }
+});
+document.getElementById("buscarInternetInput").addEventListener("keydown", function(e){
+  if(e.key==="Enter"){ e.preventDefault(); buscarInternetBoton(); }
 });
 renderLista();
 mensajesMostrados=(chats[sec]||[]).slice();
@@ -320,4 +398,3 @@ mostrarChat();
 </script>
 </body>
 </html>
-    
