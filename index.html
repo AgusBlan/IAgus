@@ -82,10 +82,11 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 <textarea id="entrada" placeholder="Hablame..."></textarea>
 <button class="btn" id="btnEnviar" style="background:#ff8fb8;color:white" onclick="hablar()">ENVIAR</button>
 <div style="display:flex;gap:6px;flex-wrap:wrap">
-<button class="btn" style="background:#fff0a8;flex:1" onclick="generarArchivo('pdf')">📄 PDF</button>
-<button class="btn" style="background:#a8d8ff;flex:1" onclick="generarArchivo('doc')">📝 Word / DOC</button>
-<button class="btn" style="background:#b8f1cc;flex:1" onclick="generarArchivo('excel')">📊 Excel</button>
+<button class="btn" style="background:#fff0a8;flex:1" onclick="generarArchivo('pdf')">📄 Ver PDF</button>
+<button class="btn" style="background:#a8d8ff;flex:1" onclick="generarArchivo('doc')">📝 Ver Word / DOC</button>
+<button class="btn" style="background:#b8f1cc;flex:1" onclick="generarArchivo('excel')">📊 Ver Excel</button>
 </div>
+<div style="font-size:11px;text-align:center">No se descarga solo, solo cuando tocás el botón 💖</div>
 <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center">
 <label class="btn" style="background:#fff0a8;width:auto;display:inline-block;text-align:center;cursor:pointer">📎 Subir archivo<input type="file" id="subirArchivo" accept="*/*" style="display:none"></label>
 <button class="btn" style="background:#a8d8ff;width:auto" id="btnAudio2" onclick="grabarAudio()">🎤 Grabar</button>
@@ -125,8 +126,7 @@ function miUbicacion(){ if(!navigator.geolocation){ document.getElementById("ubi
 function cambiarModo(m){ document.getElementById("modoTexto").innerText="Modo: Groq Gratis ⚡"; }
 function guardarKey(){ var k=document.getElementById("geminiKey").value.trim(); if(!k){ document.getElementById("keyEstado").innerText="Pegá una llave primero"; return; } try{ sessionStorage.setItem("groqKey",k); }catch(e){} document.getElementById("keyEstado").innerText="✅ Llave activada"; }
 function probarKey(){ var k=""; try{ k=sessionStorage.getItem("groqKey")||document.getElementById("geminiKey").value.trim(); }catch(e){} if(!k){ document.getElementById("keyEstado").innerText="No hay llave"; return; } document.getElementById("keyEstado").innerText="Probando..."; fetch("https://api.groq.com/openai/v1/models",{headers:{Authorization:"Bearer "+k}}).then(function(r){ document.getElementById("keyEstado").innerText=r.ok?"✅ Tu llave anda!":"❌ No anda: "+r.status; }).catch(function(){ document.getElementById("keyEstado").innerText="❌ Error de conexión"; }); }
-function addMsg(texto, clase){ var c=document.getElementById("chat"); var d=document.createElement("div"); d.className="msg "+clase; d.innerText=texto; c.appendChild(d); c.scrollTop=c.scrollHeight; return d; }
-function addMsgSinGuardar(texto, clase){ return addMsg(texto, clase); }
+function addMsg(texto, clase){ if(!texto || texto==="undefined") return; var c=document.getElementById("chat"); var d=document.createElement("div"); d.className="msg "+clase; d.innerText=texto; c.appendChild(d); c.scrollTop=c.scrollHeight; return d; }
 function quiereArchivo(texto){ var t=texto.toLowerCase(); if(t.includes("pdf")) return "pdf"; if(t.includes("word")||t.includes("doc")) return "doc"; if(t.includes("excel")||t.includes("planilla")) return "excel"; return null; }
 async function hablar(){
   var entrada=document.getElementById("entrada");
@@ -138,7 +138,7 @@ async function hablar(){
   entrada.value="";
   document.getElementById("estadoIA").innerText="IAgus está pensando...";
   var key=""; try{ key=sessionStorage.getItem("groqKey")||""; }catch(e){}
-  if(!key){ var r="Necesito tu llave de Groq para responderte. Pegala arriba y tocá Activar llave. Si me pediste un PDF, cuando tengas la llave te lo armo solo."; ultimaRespuestaIA=r; addMsg(r,"ia"); document.getElementById("estadoIA").innerText=""; guardarChats(); return; }
+  if(!key){ var r="Necesito tu llave de Groq para responderte. Pegala arriba y tocá Activar llave."; ultimaRespuestaIA=r; addMsg(r,"ia"); document.getElementById("estadoIA").innerText=""; guardarChats(); return; }
   var textoParaIA = texto;
   if(esResumenPDF){
     if(!pdfTextoTotal){ addMsg("No encuentro ningún PDF subido. Subí primero el PDF en el chat con 📎 y después pedime el resumen.","ia"); document.getElementById("estadoIA").innerText=""; return; }
@@ -151,7 +151,7 @@ async function hablar(){
     var resp=(data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "No pude responder, intentá de nuevo.";
     ultimaRespuestaIA=limpiarTexto(resp); addMsg(ultimaRespuestaIA,"ia");
     guardarChats();
-    if(tipoArchivo){ setTimeout(function(){ generarArchivo(tipoArchivo); addMsg("Listo, ya te descargué el "+tipoArchivo.toUpperCase()+" 💖","ia"); guardarChats(); }, 500); }
+    if(tipoArchivo){ addMsg("Listo, ya te preparé el "+tipoArchivo.toUpperCase()+" 💖 Tocá el botón de abajo ("+tipoArchivo.toUpperCase()+") cuando quieras verlo, no te lo descargo solo.", "ia"); guardarChats(); }
   }catch(e){ var err="Error de conexión con Groq. Revisá tu llave o tu internet."; ultimaRespuestaIA=err; addMsg(err,"ia"); guardarChats(); }
   document.getElementById("estadoIA").innerText="";
 }
@@ -164,19 +164,23 @@ function generarArchivo(tipo){
 }
 function crearPDF(titulo, texto){
   try{
-    var doc=new window.jspdf.jsPDF();
+    var doc = new window.jspdf.jsPDF();
     doc.setFontSize(18); doc.text(String(titulo).slice(0,60), 15, 15);
     doc.setFontSize(12);
-    var lineas=doc.splitTextToSize(String(texto), 170);
-    var y=25;
+    var limpio = String(texto).replace(/[^\x00-\xFF]/g, "");
+    var lineas = doc.splitTextToSize(limpio, 170);
+    var y = 25;
     for(var i=0;i<lineas.length;i++){ if(y>270){ doc.addPage(); y=15; } doc.text(lineas[i], 15, y); y+=7; }
-    doc.save("IAgus.pdf");
-  }catch(e){ alert("No pude crear el PDF: "+e.message); }
+    var blob = doc.output("blob");
+    var url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+  }catch(e){ alert("No pude crear el PDF: " + e.message); }
 }
 function crearDOC(titulo, texto){
   var html="<html><head><meta charset='utf-8'><title>"+escapeHTML(titulo)+"</title></head><body><h1>"+escapeHTML(titulo)+"</h1><p>"+escapeHTML(texto).split("\n").join("<br>")+"</p></body></html>";
   var blob=new Blob([html],{type:"application/msword"});
-  var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="IAgus.doc"; a.click();
+  var url=URL.createObjectURL(blob);
+  window.open(url, "_blank");
 }
 function crearExcel(titulo, texto){
   try{
@@ -187,7 +191,8 @@ function crearExcel(titulo, texto){
   }catch(e){
     var csv="IAgus - "+titulo+"\n"+texto.replace(/,/g,";");
     var blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
-    var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="IAgus.csv"; a.click();
+    var url=URL.createObjectURL(blob);
+    window.open(url, "_blank");
   }
 }
 var pdfColor="amarillo", pdfColorHex="#fff176";
@@ -239,7 +244,6 @@ function generarImagen(){ var q=document.getElementById("promptImagen").value.tr
 function resumenDia(){ var hoy=new Date().toLocaleDateString("es-AR"); document.getElementById("hoyBox").innerText="Hoy es "+hoy+" 💖 ¡Vos podés!"; }
 function agregarTareaManual(){ var v=document.getElementById("nuevaTarea").value.trim(); if(!v) return; var d=document.createElement("div"); d.className="tarea"; d.innerText=v; d.onclick=function(){ d.classList.toggle("hecha"); }; document.getElementById("listaTareas").appendChild(d); document.getElementById("nuevaTarea").value=""; }
 function grabarAudio(){ alert("Mantené apretado para grabar - esta función usa el micrófono del celu"); }
-// === CHATS CON NOMBRE + CERRAR ===
 var chatsGuardados = {};
 var chatActivo = "chat1";
 try{
@@ -252,7 +256,7 @@ function guardarChats(){
   try{
     var mensajes=[];
     var divs=document.getElementById("chat").querySelectorAll(".msg");
-    for(var i=0;i<divs.length;i++){ mensajes.push({texto:divs[i].innerText, clase:divs[i].className.includes("vos")?"vos":"ia"}); }
+    for(var i=0;i<divs.length;i++){ var t=divs[i].innerText; if(t && t!=="undefined") mensajes.push({texto:t, clase:divs[i].className.includes("vos")?"vos":"ia"}); }
     if(!chatsGuardados[chatActivo]) chatsGuardados[chatActivo]={nombre:chatActivo, mensajes:[], cerrado:false};
     chatsGuardados[chatActivo].mensajes=mensajes;
     localStorage.setItem("chatsAgusV2", JSON.stringify(chatsGuardados));
@@ -284,13 +288,13 @@ function cambiarChat(id){
   var c=document.getElementById("chat");
   var msgsAntes=[];
   var divsAntes=c.querySelectorAll(".msg");
-  for(var j=0;j<divsAntes.length;j++){ msgsAntes.push({texto:divsAntes[j].innerText, clase:divsAntes[j].className.includes("vos")?"vos":"ia"}); }
+  for(var j=0;j<divsAntes.length;j++){ var tt=divsAntes[j].innerText; if(tt && tt!=="undefined") msgsAntes.push({texto:tt, clase:divsAntes[j].className.includes("vos")?"vos":"ia"}); }
   if(chatsGuardados[chatActivo]) chatsGuardados[chatActivo].mensajes=msgsAntes;
   chatActivo=id;
   c.innerHTML="";
   var msgs=(chatsGuardados[id] && chatsGuardados[id].mensajes)||[];
-  for(var i=0;i<msgs.length;i++){ addMsg(msgs[i].texto, msgs[i].clase); }
-  if(msgs.length===0) addMsg("Chat '"+(chatsGuardados[id].nombre||id)+"' 💖 ¿De qué hablamos?", "ia");
+  for(var i=0;i<msgs.length;i++){ var m=msgs[i]; var t=(typeof m==="string")?m:m.texto; var cl=(typeof m==="string")?"ia":(m.clase||"ia"); if(t && t!=="undefined") addMsg(t, cl); }
+  if(c.querySelectorAll(".msg").length===0) addMsg("Chat '"+(chatsGuardados[id].nombre||id)+"' 💖 ¿De qué hablamos?", "ia");
   guardarChats();
 }
 function crearChat(){
@@ -326,7 +330,6 @@ function borrarChat(id){
   cambiarChat(chatActivo);
 }
 document.getElementById("audioPdfFile").addEventListener("change", async function(e){ var f=e.target.files[0]; if(!f) return; document.getElementById("audioPdfStatus").innerText="Leyendo "+f.name+"..."; try{ var buf=await f.arrayBuffer(); var pdf=await pdfjsLib.getDocument({data:buf}).promise; var txt=""; for(var p=1;p<=pdf.numPages;p++){ var page=await pdf.getPage(p); var c=await page.getTextContent(); for(var i=0;i<c.items.length;i++) txt+=c.items[i].str+" "; } document.getElementById("textoAudioLibro").value=txt; document.getElementById("textoAudioGrande").value=txt; pdfTextoTotal=txt; pdfNombreActual=f.name; document.getElementById("audioPdfStatus").innerText="✅ Listo para leer"; }catch(err){ document.getElementById("audioPdfStatus").innerText="Error: "+err.message; } });
-// PDF EN EL CHAT + QUE LO RECUERDE
 try{
   var guardadoPDF = localStorage.getItem("pdfRecordadoIAgus");
   if(guardadoPDF){ var objPDF=JSON.parse(guardadoPDF); pdfTextoTotal=objPDF.texto||""; pdfNombreActual=objPDF.nombre||""; }
