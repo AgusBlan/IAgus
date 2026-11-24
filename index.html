@@ -34,25 +34,29 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 #pdfViewer{max-height:500px;overflow-y:auto;background:#f5f5f5;border-radius:12px;padding:8px}
 .pdf-page{background:white;margin:8px auto;padding:12px;border-radius:8px;line-height:1.6;font-size:14px;white-space:pre-wrap;word-break:break-word}
 .color-dot{width:30px;height:30px;border-radius:50%;border:3px solid white;cursor:pointer;box-shadow:0 0 0 1px #ccc}
-/* CELU ADAPTABLE - sin cambiar la interfaz de compu */
-/* TABLET - de costado como antes, solo más finita */
+/* 2 MODOS FIJOS - Compu/Tablet y Celu */
+body.modo-compu{flex-direction:row !important;overflow:hidden !important;height:100dvh !important}
+body.modo-compu .sidebar{display:flex !important;width:260px !important;min-width:180px !important;max-width:500px !important;height:100vh !important;max-height:none !important}
+body.modo-compu #resizer{display:block !important}
+body.modo-compu .main{width:auto !important;height:100vh !important;padding:10px !important;padding-bottom:10px !important;overflow-y:auto !important}
+body.modo-compu #chat{height:32vh !important;min-height:200px !important;max-height:38vh !important}
+body.modo-celu{flex-direction:column !important;overflow-y:auto !important;height:auto !important}
+body.modo-celu .sidebar{display:none !important;width:100% !important;max-width:none !important;height:auto !important;max-height:70vh !important}
+body.modo-celu .sidebar.mostrar{display:flex !important}
+body.modo-celu #resizer{display:none !important}
+body.modo-celu .main{width:100% !important;height:auto !important;min-height:100dvh;padding:8px !important;padding-bottom:160px !important;overflow:visible !important}
+body.modo-celu #chat{height:45vh !important;min-height:300px !important;max-height:55vh !important}
+/* Auto si no elegiste modo todavía */
 @media (min-width: 601px) and (max-width: 1024px){
-  .sidebar{width:210px !important;min-width:190px !important;display:flex !important}
-  #resizer{display:none !important}
-  .main{padding:8px !important}
-  #chat{height:38vh !important;min-height:250px !important;max-height:45vh !important}
+  body:not(.modo-compu):not(.modo-celu) .sidebar{width:210px !important;min-width:190px !important}
 }
-
-/* CELU SOLO - acá sí se esconde la barra */
 @media (max-width: 600px){
-  body{flex-direction:column !important;overflow-y:auto !important;height:auto !important}
-  .sidebar{display:none !important;width:100% !important;max-width:none !important;height:auto !important;max-height:70vh !important;overflow-y:auto}
-  .sidebar.mostrar{display:flex !important}
-  #resizer{display:none !important}
-  .main{width:100% !important;height:auto !important;min-height:100dvh;padding:8px !important;padding-bottom:160px !important;overflow:visible !important}
-  #chat{height:45vh !important;min-height:300px !important;max-height:55vh !important}
-  textarea{font-size:16px !important}
-  .btn{font-size:14px !important}
+  body:not(.modo-compu):not(.modo-celu){flex-direction:column !important;overflow-y:auto !important;height:auto !important}
+  body:not(.modo-compu):not(.modo-celu) .sidebar{display:none !important;width:100% !important;max-width:none !important;height:auto !important;max-height:70vh !important}
+  body:not(.modo-compu):not(.modo-celu) .sidebar.mostrar{display:flex !important}
+  body:not(.modo-compu):not(.modo-celu) #resizer{display:none !important}
+  body:not(.modo-compu):not(.modo-celu) .main{width:100% !important;height:auto !important;min-height:100dvh;padding:8px !important;padding-bottom:160px !important;overflow:visible !important}
+  body:not(.modo-compu):not(.modo-celu) #chat{height:45vh !important;min-height:300px !important;max-height:55vh !important}
 }
 </style>
 </head>
@@ -89,6 +93,10 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 <div id="resizer"></div>
 <div class="main">
 <button class="btn" style="background:#ffc7dd" onclick="document.getElementById('sidebar').classList.toggle('mostrar')">☰ Menú / Esconder menú</button>
+<div style="display:flex;gap:6px">
+<button class="btn" id="btnModoCompu" style="background:#a8e0ff;flex:1" onclick="cambiarVista('compu')">💻 Compu / Tablet</button>
+<button class="btn" id="btnModoCelu" style="background:#fff0a8;flex:1" onclick="cambiarVista('celu')">📱 Celular</button>
+</div>
 <div style="display:flex;gap:6px;flex-wrap:wrap">
 <button class="btn" style="background:#ffc7dd;width:auto;padding:8px 14px" onclick="togglePanel('panelChat')">💬 Chat</button>
 <button class="btn" style="background:#a8e0ff;width:auto;padding:8px 14px" onclick="togglePanel('panelPDF')">📄 Lector PDF</button>
@@ -131,6 +139,14 @@ var ultimoTema = "";
 var pdfTextoTotal = "";
 var pdfNombreActual = "";
 var PROMPT_IA = "Sos IAgus, una IA amable y clara. ENTENDES PERFECTO el lunfardo argentino: che, boludo/a, posta, re, copado, flashear, quilombo, piola, groso, banca, dale, etc. Cuando el usuario te habla con lunfardo, entendelo, pero VOS RESPONDE SIEMPRE en español claro, neutro y educado, SIN lunfardo, SIN decir boludo, che, posta, re, ni ninguna palabra de lunfardo. Nunca imites el lunfardo. Enseñas idiomas: inglés, portugués, francés, italiano, alemán. Cuando te piden enseñar un idioma, das vocabulario, ejemplos, pronunciación y mini práctica. REGLA CLAVE: Nunca repitas textual lo que el usuario te manda de un PDF o archivo. Si te mandan un texto largo o un PDF, NO lo copies. Resumilo, explicalo, respondé la pregunta sobre ese texto, pero no lo repitas. Si te piden un archivo, prepará el contenido listo para PDF / DOC / Excel, con títulos y partes. NO cortes los mensajes a la mitad: si la respuesta es larga, desarrollala completa.";
+function cambiarVista(modo){
+  document.body.classList.remove("modo-compu","modo-celu","forzar-compu");
+  document.body.classList.add(modo==="compu" ? "modo-compu" : "modo-celu");
+  try{ localStorage.setItem("vistaIAgus", modo); }catch(e){}
+  var b1=document.getElementById("btnModoCompu"), b2=document.getElementById("btnModoCelu");
+  if(b1) b1.style.outline = modo==="compu" ? "3px solid white" : "none";
+  if(b2) b2.style.outline = modo==="celu" ? "3px solid white" : "none";
+}
 function toggleBox(id){ var el=document.getElementById(id); el.classList.toggle("min"); var b=el.querySelector(".mini-btn"); if(b) b.innerText=el.classList.contains("min")?"+" : "–"; }
 function toggleSidebar(){ var s=document.getElementById("sidebar"), r=document.getElementById("resizer"); var o=s.style.display!=="none"; s.style.display=o?"none":"flex"; r.style.display=o?"none":"block"; }
 function togglePanel(id){ var ids=["panelChat","panelPDF","panelAudio","panelYTbig"]; for(var i=0;i<ids.length;i++){ var el=document.getElementById(ids[i]); if(ids[i]===id){ el.style.display=(ids[i]==="panelChat"||ids[i]==="panelPDF")?"flex":"block"; if(ids[i]!=="panelChat") el.style.flex="1"; } else el.style.display="none"; } }
@@ -139,7 +155,7 @@ function limpiarTexto(s){ s=String(s==null?"":s); s=s.split("**").join(""); retu
 function mostrarPerfil(){ var d=document.getElementById("perfilBox"); if(d.style.display==="block") d.style.display="none"; else { d.style.display="block"; document.getElementById("miPerfilTexto").value=miPerfil; } }
 function guardarPerfil(){ miPerfil=document.getElementById("miPerfilTexto").value.trim(); try{localStorage.setItem("miPerfilAgus",miPerfil);}catch(e){} aprenderDeVos("Mi perfil es: "+miPerfil); document.getElementById("perfilBox").style.display="none"; }
 function aprenderDeVos(t){ try{ var m=localStorage.getItem("memoriaCompartidaIAgus")||""; localStorage.setItem("memoriaCompartidaIAgus", m+"\n"+t); }catch(e){} }
-function borrarTodo(){ if(!confirm("¿Borrar TODO?")) return; try{ localStorage.removeItem("miPerfilAgus"); localStorage.removeItem("chatsAgusV2"); localStorage.removeItem("ordenAgus"); localStorage.removeItem("chatActivoAgus"); localStorage.removeItem("memoriaCompartidaIAgus"); localStorage.removeItem("tareasAgus"); localStorage.removeItem("temaIAgus"); localStorage.removeItem("pdfRecordadoIAgus"); localStorage.removeItem("memoriaCompletaIAgus"); localStorage.removeItem("groqKey"); }catch(e){} location.reload(); }
+function borrarTodo(){ if(!confirm("¿Borrar TODO?")) return; try{ localStorage.removeItem("miPerfilAgus"); localStorage.removeItem("chatsAgusV2"); localStorage.removeItem("ordenAgus"); localStorage.removeItem("chatActivoAgus"); localStorage.removeItem("memoriaCompartidaIAgus"); localStorage.removeItem("tareasAgus"); localStorage.removeItem("temaIAgus"); localStorage.removeItem("pdfRecordadoIAgus"); localStorage.removeItem("memoriaCompletaIAgus"); localStorage.removeItem("groqKey"); localStorage.removeItem("vistaIAgus"); }catch(e){} location.reload(); }
 function mostrarTemas(){ var d=document.getElementById("temas"); d.style.display=d.style.display==="block"?"none":"block"; }
 function cambiarTema(){
   var f=document.getElementById("cFondo").value, r=document.getElementById("cRosa").value, b=document.getElementById("cBoton").value, l=document.getElementById("cLetra").value;
@@ -448,6 +464,12 @@ try{
   if(keyGuardada) document.getElementById("geminiKey").value = keyGuardada;
 }catch(e){}
 try{ var tGuardado=JSON.parse(localStorage.getItem("temaIAgus")||"null"); if(tGuardado){ document.getElementById("cFondo").value=tGuardado.f; document.getElementById("cRosa").value=tGuardado.r; document.getElementById("cBoton").value=tGuardado.b; document.getElementById("cLetra").value=tGuardado.l; cambiarTema(); } }catch(e){}
+try{
+  var vistaGuardada = localStorage.getItem("vistaIAgus");
+  if(vistaGuardada) cambiarVista(vistaGuardada);
+  else if(window.innerWidth <= 600) cambiarVista("celu");
+  else cambiarVista("compu");
+}catch(e){}
 cambiarModo('rapido'); resumenDia();
 setTimeout(function(){ cambiarChat(chatActivo); if(pdfTextoTotal){ setTimeout(function(){ addMsg("Me acuerdo de tu PDF '"+pdfNombreActual+"'. Pedime lo que quieras sobre él 💖","ia"); },500); } }, 300);
 </script>
