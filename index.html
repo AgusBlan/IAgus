@@ -186,8 +186,9 @@ async function buscarEnTodo(mensaje){
   var q=mensaje.toLowerCase().replace(/quien es|quién es|que es|qué es|que significa|quién fue|quien fue/g,"").trim();
   if(!q) q=mensaje; q=q.charAt(0).toUpperCase()+q.slice(1);
   var resultados=[];
-  var p1=fetchConTimeout("https://es.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(q)).then(async r=>{ if(r&&r.ok){ var d=await r.json(); if(d.extract) resultados.push(d.extract.slice(0,700)); } }).catch(()=>{});
-  await Promise.all([p1]);
+  var p1=fetchConTimeout("https://es.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(q)).then(async r=>{ if(r&&r.ok){ var d=await r.json(); if(d.extract) resultados.push("Wikipedia: "+d.extract.slice(0,600)); } }).catch(()=>{});
+  var p2=fetchConTimeout("https://api.duckduckgo.com/?q="+encodeURIComponent(q)+"&format=json&no_html=1&skip_disambig=1").then(async r=>{ if(r&&r.ok){ var d=await r.json(); if(d.AbstractText) resultados.push("DuckDuckGo: "+d.AbstractText.slice(0,600)); if(d.RelatedTopics && d.RelatedTopics[0] && d.RelatedTopics[0].Text) resultados.push("Google/Duck: "+d.RelatedTopics[0].Text.slice(0,600)); } }).catch(()=>{});
+  await Promise.all([p1,p2]);
   return resultados.join("\n\n");
 }
 async function buscarRapido(){
