@@ -98,7 +98,7 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 <div id="panelYTbig" style="display:none;margin-top:8px;background:white;border-radius:15px;padding:12px"><b>🎵 Música grande</b><input id="ytLinkBig" placeholder="Pegá tu link de YouTube"><button class="btn" style="background:#ff8fb8;color:white" onclick="document.getElementById('ytLink').value=document.getElementById('ytLinkBig').value;ponerYT();document.getElementById('ytFrameBig').src=document.getElementById('ytFrame').src">▶️ Poner</button><iframe id="ytFrameBig" width="100%" height="220" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen style="border-radius:12px;margin-top:8px"></iframe></div>
 </div>
 <script>
-var MODELO_GROQ = "llama-3.3-70b-versatile";
+var MODELO_GROQ = "openai/gpt-oss-20b";
 function toggleBox(id){ var el=document.getElementById(id); el.classList.toggle("min"); var b=el.querySelector(".mini-btn"); if(b) b.innerText=el.classList.contains("min")?"+" : "–"; }
 function toggleSidebar(){ var s=document.getElementById("sidebar"), r=document.getElementById("resizer"); var o=s.style.display!=="none"; s.style.display=o?"none":"flex"; r.style.display=o?"none":"block"; }
 function togglePanel(id){ var ids=["panelChat","panelPDF","panelAudio","panelYTbig"]; for(var i=0;i<ids.length;i++){ var el=document.getElementById(ids[i]); if(ids[i]===id){ el.style.display=(ids[i]==="panelChat"||ids[i]==="panelPDF")?"flex":"block"; if(ids[i]!=="panelChat") el.style.flex="1"; } else el.style.display="none"; } }
