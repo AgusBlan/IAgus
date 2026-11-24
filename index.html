@@ -38,7 +38,7 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 </head>
 <body>
 <div class="sidebar" id="sidebar">
-<h3 style="text-align:center;background:white;border-radius:15px;padding:8px;margin:0">🌸 IAgus<br><span style="font-size:11px">v96</span></h3>
+<h3 style="text-align:center;background:white;border-radius:15px;padding:8px;margin:0">🌸 IAgus<br><span style="font-size:11px">v97</span></h3>
 <div style="display:flex;gap:6px">
 <button class="modo-btn" id="btnAdulta" style="background:#a8e0ff" onclick="cambiarModo('rapido')">⚡ Rápido</button>
 <button class="modo-btn" id="btnPrivado" style="background:#b8f1cc" onclick="cambiarModo('privado')">🔒 Privado</button>
@@ -354,7 +354,22 @@ async function probarKey(){
     else { var txt=await r.text(); document.getElementById("keyEstado").innerText="❌ Error "+r.status+": "+txt.slice(0,300); }
   }catch(e){ document.getElementById("keyEstado").innerText="❌ No pude conectar: "+e.message; }
 }
-async function hablarConGemini(mensaje, infoInternet){
+async function hablarConIA(mensaje){
+  // Si pregunta por el PDF, contestar del PDF sin usar el cerebro
+  if(pdfTextoTotal && pdfTextoTotal.length > 50){
+    var mm = mensaje.toLowerCase();
+    if(mm.indexOf("pdf")!==-1 || mm.indexOf("harari")!==-1 || mm.indexOf("ese")!==-1 || mm.indexOf("resumen")!==-1 || mm.indexOf("capitulo")!==-1 || mm.indexOf("capítulo")!==-1){
+      // Buscar la palabra clave en el PDF
+      var palabras = mensaje.split(" ").filter(function(w){ return w.length > 4; });
+      var encontrado = "";
+      for(var i=0;i<palabras.length;i++){
+        var idx = pdfTextoTotal.toLowerCase().indexOf(palabras[i].toLowerCase());
+        if(idx!==-1){ encontrado = pdfTextoTotal.slice(Math.max(0, idx-300), idx+800); break; }
+      }
+      if(!encontrado) encontrado = pdfTextoTotal.slice(0, 1200);
+      return "📄 En tu PDF dice esto sobre eso:\n\n" + encontrado;
+    }
+  {
   var key=geminiKeyEnMemoria || document.getElementById("geminiKey").value.trim();
   if(!key) return "❌ Pegá tu llave en Rápido y tocá Activar llave.";
   geminiKeyEnMemoria=key;
