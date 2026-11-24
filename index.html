@@ -386,6 +386,9 @@ async function hablarConIA(mensaje){
 }
 async function hablarConIA(mensaje){
   var memoria=construirMemoria(); var infoInternet="";
+  if(pdfTextoTotal && pdfTextoTotal.length > 50){
+  memoria = memoria + "\n\nPDF SUBIDO, LEÉLO VOS:\n" + pdfTextoTotal.slice(0, 6000);
+  }
   if(necesitaInternet(mensaje)){ document.getElementById("estadoIA").innerText="🌐 Buscando en Wikipedia + DuckDuckGo..."; infoInternet=await buscarEnInternet(mensaje); }
   if(modoActual==="privado"){
     if(infoInternet && necesitaInternet(mensaje)) return "🌐 Encontré esto en Wikipedia + DuckDuckGo, sin usar el cerebro para que no lagee:\n\n"+infoInternet;
