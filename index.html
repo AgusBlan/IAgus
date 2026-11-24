@@ -243,7 +243,53 @@ function pararAudiolibro(){ speechSynthesis.cancel(); }
 function generarImagen(){ var q=document.getElementById("promptImagen").value.trim(); if(!q) return; window.open("https://unsplash.com/s/photos/"+encodeURIComponent(q),"_blank"); }
 function resumenDia(){ var hoy=new Date().toLocaleDateString("es-AR"); document.getElementById("hoyBox").innerText="Hoy es "+hoy+" 💖 ¡Vos podés!"; }
 function agregarTareaManual(){ var v=document.getElementById("nuevaTarea").value.trim(); if(!v) return; var d=document.createElement("div"); d.className="tarea"; d.innerText=v; d.onclick=function(){ d.classList.toggle("hecha"); }; document.getElementById("listaTareas").appendChild(d); document.getElementById("nuevaTarea").value=""; }
-function crearChat(){ document.getElementById("chat").innerHTML=""; ultimaRespuestaIA=""; addMsg("Nuevo chat creado 💖 ¿De qué hablamos?","ia"); }
+// === CHATS CON NOMBRE + CERRAR ===
+var chatsGuardados = {};
+var chatActivo = "chat1";
+try{
+  var raw = JSON.parse(localStorage.getItem("chatsAgusV2")||"{}");
+  for(var k in raw){
+    if(Array.isArray(raw[k])){ chatsGuardados[k] = {nombre: k, mensajes: raw[k], cerrado: false}; }
+    else { chatsGuardados[k] = raw[k]; }
+  }
+  chatActivo = localStorage.getItem("chatActivoAgus")||"chat1";
+  if(Object.keys(chatsGuardados).length===0){ chatsGuardados={chat1:{nombre:"Chat 1", mensajes:[], cerrado:false}}; }
+}catch(e){ chatsGuardados={chat1:{nombre:"Chat 1", mensajes:[], cerrado:false}}; chatActivo="chat1"; }
+
+function guardarChats(){
+  try{
+    var mensajes = [];
+    var divs = document.getElementById("chat").querySelectorAll(".msg");
+    for(var i=0;i<divs.length;i++){ mensajes.push({texto: divs[i].innerText, clase: divs[i].className.includes("vos")?"vos":"ia"}); }
+    if(!chatsGuardados[chatActivo]) chatsGuardados[chatActivo]={nombre:chatActivo, mensajes:[], cerrado:false};
+    chatsGuardados[chatActivo].mensajes = mensajes;
+    localStorage.setItem("chatsAgusV2", JSON.stringify(chatsGuardados));
+    localStorage.setItem("chatActivoAgus", chatActivo);
+  }catch(e){}
+  renderListaChats();
+}
+
+function renderListaChats(){
+  var cont = document.getElementById("listaChats");
+  if(!cont) return;
+  cont.innerHTML = "<b style='font-size:12px'>💬 Mis chats</b>";
+  var nombres = Object.keys(chatsGuardados);
+  for(var i=0;i<nombres.length;i++){
+    var id = nombres[i];
+    var ch = chatsGuardados[id];
+    if(ch.cerrado) continue;
+    var div = document.createElement("div");
+    div.style.cssText = "display:flex;gap:4px;margin:3px 0;align-items:center";
+    var btn = document.createElement("button");
+    btn.className = "btn";
+    btn.style.cssText = "background:" + (id===chatActivo ? "#ff8fb8;color:white" : "white") + ";flex:1;text-align:left;font-size:12px";
+    btn.innerText = (id===chatActivo ? "● " : "") + (ch.nombre || id) + " (" + (ch.mensajes.length||0) + ")";
+    (function(idCopiado){ btn.onclick = function(){ cambiarChat(idCopiado); }; })(id);
+    var btnNombre = document.createElement("button");
+    btnNombre.className = "btn"; btnNombre.style.cssText = "background:#fff0a8;width:36px"; btnNombre.innerText = "✏️";
+    (function(idCopiado){ btnNombre.onclick = function(e){ e.stopPropagation(); renombrarChat(idCopiado); }; })(id);
+    var btnCerrar = document.createElement("button");
+    btnCerrar.className = "btn"; btnCerrar.style.cssText = "background:#e2c6ff;width:36px"; btnCerrar.innerText
 function grabarAudio(){ alert("Mantené apretado para grabar - esta función usa el micrófono del celu"); }
 document.getElementById("audioPdfFile").addEventListener("change", async function(e){ var f=e.target.files[0]; if(!f) return; document.getElementById("audioPdfStatus").innerText="Leyendo "+f.name+"..."; try{ var buf=await f.arrayBuffer(); var pdf=await pdfjsLib.getDocument({data:buf}).promise; var txt=""; for(var p=1;p<=pdf.numPages;p++){ var page=await pdf.getPage(p); var c=await page.getTextContent(); for(var i=0;i<c.items.length;i++) txt+=c.items[i].str+" "; } document.getElementById("textoAudioLibro").value=txt; document.getElementById("textoAudioGrande").value=txt; pdfTextoTotal=txt; pdfNombreActual=f.name; document.getElementById("audioPdfStatus").innerText="✅ Listo para leer"; }catch(err){ document.getElementById("audioPdfStatus").innerText="Error: "+err.message; } });
 cambiarModo('rapido'); resumenDia();
