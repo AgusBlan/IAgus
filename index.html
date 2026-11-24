@@ -6,6 +6,7 @@
 <title>IAgus</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffc7dd">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial;background:#fff6f8;display:flex;min-height:100vh;height:100dvh;overflow:hidden}
@@ -14,6 +15,7 @@ body{margin:0;font-family:Arial;background:#fff6f8;display:flex;min-height:100vh
 .main{flex:1;display:flex;flex-direction:column;padding:10px;min-width:0;height:100vh;overflow-y:auto}
 #chat{height:38vh;background:white;border-radius:18px;padding:14px;border:2px dashed #ffc7dd;overflow-y:auto}
 .msg{padding:10px;border-radius:12px;margin:8px 0;word-break:break-word;white-space:pre-wrap}
+.msg img{max-width:100%;border-radius:12px}
 .vos{background:#fff0a8}.ia{background:#ffe3ee}
 textarea{width:100%;height:70px;padding:12px;border-radius:12px;border:2px solid #ffc7dd;font-size:15px}
 .btn{width:100%;padding:11px;border:none;border-radius:15px;font-weight:bold;margin-top:6px;font-size:13px;cursor:pointer}
@@ -21,11 +23,22 @@ textarea{width:100%;height:70px;padding:12px;border-radius:12px;border:2px solid
 .modo-activo{outline:3px solid white}
 input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 .box{background:white;padding:10px;border-radius:15px}
+.box-head{display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-weight:bold}
+.box-body{margin-top:8px}
+.box.min .box-body{display:none}
+.mini-btn{border:none;background:#ffc7dd;border-radius:50%;width:26px;height:26px;cursor:pointer;font-weight:bold}
+.tarea{background:white;padding:10px;border-radius:12px;margin:6px 0;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+.tarea.hecha{opacity:.5;text-decoration:line-through}
+#pdfViewer{max-height:500px;overflow-y:auto;background:#f5f5f5;border-radius:12px;padding:8px}
+.pdf-page{background:white;margin:8px auto;padding:12px;border-radius:8px;line-height:1.6;font-size:14px;white-space:pre-wrap;word-break:break-word}
+.color-dot{width:30px;height:30px;border-radius:50%;border:3px solid white;cursor:pointer;box-shadow:0 0 0 1px #ccc}
+.side-btn{width:100%;border:0;border-radius:12px;padding:10px;text-align:left;font-weight:bold;cursor:pointer;margin:3px 0}
+.side-btn.active{outline:3px solid white}
 </style>
 </head>
 <body>
 <div class="sidebar" id="sidebar">
-<h3 style="text-align:center;background:white;border-radius:15px;padding:8px;margin:0">🌸 IAgus<br><span style="font-size:11px">v84 - Privado sin lag</span></h3>
+<h3 style="text-align:center;background:white;border-radius:15px;padding:8px;margin:0">🌸 IAgus<br><span style="font-size:11px">v85 - TODO + sin lag</span></h3>
 <div style="display:flex;gap:6px">
 <button class="modo-btn" id="btnAdulta" style="background:#a8e0ff" onclick="cambiarModo('rapido')">⚡ Rápido</button>
 <button class="modo-btn" id="btnPrivado" style="background:#b8f1cc" onclick="cambiarModo('privado')">🔒 Privado</button>
@@ -40,253 +53,265 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 <button class="btn" style="background:#fff0a8" onclick="probarKey()">🧪 Probar si anda mi llave</button>
 <div id="keyEstado" style="font-size:11px;text-align:center;margin-top:4px"></div>
 </div>
-<div class="box">
-<b style="font-size:12px">🌐 Buscar en internet - Wiki + DuckDuckGo</b>
-<input id="buscarInternetInput" placeholder="Ej: fotosíntesis, Clefairy, Argentina...">
-<button class="btn" style="background:#a8d8ff" onclick="buscarInternetBoton()">🌐 Buscar en Wikipedia + DuckDuckGo</button>
-<div id="resultadoInternet" style="font-size:12px;margin-top:6px;white-space:pre-wrap"></div>
-</div>
-<button class="btn" style="background:white" onclick="toggleSidebar()">◀️ Esconder menú</button>
+<button class="btn" style="background:white" onclick="toggleSidebar()">◀️ Esconder menú / Mostrar menú</button>
+<div class="box" id="boxBuscar"><div class="box-head" onclick="toggleBox('boxBuscar')"><span>🔍 Buscar rápido</span><button class="mini-btn">–</button></div><div class="box-body"><input id="buscarInput" placeholder="Ej: fotosíntesis..."><button class="btn" style="background:#a8e0ff" onclick="buscarRapido()">🔍 Buscar en todo</button><div id="resultadoBuscar" style="font-size:12px;margin-top:6px;white-space:pre-wrap"></div></div></div>
+<div class="box" id="boxInternet"><div class="box-head" onclick="toggleBox('boxInternet')"><span>🌐 Buscar en internet</span><button class="mini-btn">–</button></div><div class="box-body"><input id="buscarInternetInput" placeholder="Ej: fotosíntesis, Clefairy..."><button class="btn" style="background:#a8d8ff" onclick="buscarInternetBoton()">🌐 Wikipedia + DuckDuckGo</button><div id="resultadoInternet" style="font-size:12px;margin-top:6px;white-space:pre-wrap"></div></div></div>
+<div class="box" id="boxPomo"><div class="box-head" onclick="toggleBox('boxPomo')"><span>🍅 Pomodoro</span><button class="mini-btn">–</button></div><div class="box-body"><div id="pomoTime" style="font-size:28px;text-align:center;font-weight:bold">25:00</div><div id="pomoEstado" style="font-size:12px;text-align:center">Listo 💖</div><div style="display:flex;gap:6px"><button class="btn" style="background:#ff8fb8;color:white;flex:1" onclick="pomoStart()">▶️</button><button class="btn" style="background:#fff0a8;flex:1" onclick="pomoPause()">⏸️</button><button class="btn" style="background:#e2c6ff;flex:1" onclick="pomoReset()">🔄</button></div><div style="display:flex;gap:6px"><button class="btn" style="background:#ffc7dd" onclick="pomoSet(25,'Estudio')">25</button><button class="btn" style="background:#b8f1cc" onclick="pomoSet(5,'Descanso')">5</button><button class="btn" style="background:#a8d8ff" onclick="pomoSet(15,'Largo')">15</button></div></div></div>
+<div class="box" id="boxYT"><div class="box-head" onclick="toggleBox('boxYT')"><span>🎵 Musiquita YT</span><button class="mini-btn">–</button></div><div class="box-body"><input id="ytLink" placeholder="Pegá tu link de YouTube"><button class="btn" style="background:#ff8fb8;color:white" onclick="ponerYT()">▶️ Poner música</button><div style="display:flex;gap:6px"><button class="btn" style="background:#fff0a8" onclick="ponerYTpreset('jfKfPfyJRdk')">Lofi 🎧</button><button class="btn" style="background:#b8f1cc" onclick="ponerYTpreset('5qap5aO4i9A')">Lofi 2</button></div><div id="ytBox" style="display:none;margin-top:8px"><iframe id="ytFrame" width="100%" height="120" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe></div></div></div>
+<div class="box" id="boxAudio"><div class="box-head" onclick="toggleBox('boxAudio')"><span>🔊 Audiolibro</span><button class="mini-btn">–</button></div><div class="box-body"><input type="file" id="audioPdfFile" accept=".pdf" style="display:none"><button class="btn" style="background:#ff8fb8;color:white" onclick="document.getElementById('audioPdfFile').click()">📎 Adjuntar PDF para leer</button><div id="audioPdfStatus" style="font-size:11px;text-align:center"></div><textarea id="textoAudioLibro" style="height:90px" placeholder="Pegá acá el texto o subí un PDF..."></textarea><div style="display:flex;gap:6px"><button class="btn" style="background:#a8e0ff;flex:1" onclick="leerAudiolibro()">▶️ Leer</button><button class="btn" style="background:#fff0a8;flex:1" onclick="pausarAudiolibro()">⏸️</button><button class="btn" style="background:#ffcf9e;flex:1" onclick="pararAudiolibro()">⏹️</button></div>Velocidad: <select id="velAudio" style="width:100%;padding:8px;border-radius:10px"><option value="0.8">Lento</option><option value="1" selected>Normal</option><option value="1.3">Rápido</option><option value="1.6">Muy rápido</option></select><div id="audioProgreso" style="font-size:12px;text-align:center;margin-top:4px"></div></div></div>
+<div class="box" id="boxImg"><div class="box-head" onclick="toggleBox('boxImg')"><span>🖼️ Buscar inspiración</span><button class="mini-btn">–</button></div><div class="box-body"><input id="promptImagen" placeholder="Ej: habitación rosa kawaii"><button class="btn" style="background:#e2c6ff" onclick="generarImagen()">🔍 Buscar imágenes</button><div style="font-size:10px;margin-top:5px">Busca imágenes existentes con licencia abierta.</div></div></div>
+<div class="box" id="boxHoy"><div class="box-head" onclick="toggleBox('boxHoy')"><span>📅 Hoy + Tareas</span><button class="mini-btn">–</button></div><div class="box-body"><div id="hoyBox" style="font-size:12px"></div><button class="btn" style="background:#ffc7dd" onclick="resumenDia()">✨ Organizame el día</button><input id="nuevaTarea" placeholder="Ej: Estudiar" style="margin-top:8px"><button class="btn" style="background:#b8f1cc" onclick="agregarTareaManual()">+ Agregar tarea</button><div id="listaTareas"></div></div></div>
 <div id="listaChats"></div>
 <button class="btn" style="background:white" onclick="crearChat()">+ Crear chat</button>
+<button class="btn" style="background:#ffcf9e" onclick="mostrarPerfil()">👤 Mi perfil</button>
+<div id="perfilBox" style="display:none;background:white;padding:10px;border-radius:15px"><textarea id="miPerfilTexto" style="height:120px"></textarea><button class="btn" style="background:#ff8fb8;color:white" onclick="guardarPerfil()">Guardar</button></div>
+<button class="btn" style="background:#ff8fb8;color:white" onclick="borrarTodo()">🗑️ Borrar TODO</button>
+<button class="btn" style="background:#b8f1cc" onclick="miUbicacion()">🗺️ Mi ubicación</button>
+<button class="btn" style="background:#e2c6ff" onclick="mostrarTemas()">🎨 Cambiar interfaz</button>
+<div id="temas" style="display:none;background:white;padding:10px;border-radius:15px">Fondo <input type="color" id="cFondo" value="#fff6f8" onchange="cambiarTema()"><br>Barra <input type="color" id="cRosa" value="#ffc7dd" onchange="cambiarTema()"><br>Botón <input type="color" id="cBoton" value="#ff8fb8" onchange="cambiarTema()"><br>Letras <input type="color" id="cLetra" value="#5a3a45" onchange="cambiarTema()"><br><button class="btn" style="background:#ffc7dd" onclick="aplicarTema('#fff6f8','#ffc7dd','#ff8fb8','#5a3a45')">🌸 Clefairy</button></div>
 </div>
 <div id="resizer"></div>
 <div class="main">
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+<button class="btn" style="background:#ffc7dd;width:auto;padding:8px 14px" onclick="togglePanel('panelChat')">💬 Chat</button>
+<button class="btn" style="background:#a8e0ff;width:auto;padding:8px 14px" onclick="togglePanel('panelPDF')">📄 Lector PDF</button>
+<button class="btn" style="background:#b8f1cc;width:auto;padding:8px 14px" onclick="togglePanel('panelAudio')">🔊 Audiolibro grande</button>
+<button class="btn" style="background:#fff0a8;width:auto;padding:8px 14px" onclick="togglePanel('panelYTbig')">🎵 Música grande</button>
+</div>
 <div id="panelChat" style="flex:1;display:flex;flex-direction:column;min-height:0;margin-top:8px">
 <div id="chat"></div>
+<p id="ubicacion" style="font-size:13px"></p>
+<div id="mapaBox" style="display:none"><iframe id="mapa" width="100%" height="200" style="border:0;border-radius:15px"></iframe></div>
 <p id="estadoIA" style="font-size:13px;text-align:center;font-weight:bold"></p>
-<textarea id="entrada" placeholder="Hablame... Ej: Qué es la fotosíntesis?"></textarea>
+<textarea id="entrada" placeholder="Hablame..."></textarea>
 <button class="btn" id="btnEnviar" style="background:#ff8fb8;color:white" onclick="hablar()">ENVIAR</button>
-<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
-<button class="btn" style="background:#b8f1cc;width:auto" onclick="cargarIA()">⬇️ Cerebro Privado</button>
-<button class="btn" style="background:#a8d8ff;width:auto" onclick="buscarInternetBoton()">🌐 Buscar en internet</button>
-<button class="btn" style="background:#e2c6ff;width:auto" onclick="leerUltimo()">🔊 Leeme lo último</button>
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn" style="background:#b8f1cc;width:auto" onclick="cargarIA()">⬇️ Cerebro Privado</button><button class="btn" style="background:#fff0a8;width:auto" onclick="document.getElementById('subirArchivo').click()">📎 Subir archivo</button><button class="btn" style="background:#a8d8ff;width:auto" id="btnAudio2" onclick="grabarAudio()">🎤 Grabar</button><button class="btn" style="background:#e2c6ff;width:auto" onclick="leerUltimo()">🔊 Leeme lo último</button></div>
 </div>
+<div id="panelPDF" style="display:none;flex:1;flex-direction:column;min-height:0;margin-top:8px;background:white;border-radius:15px;padding:10px;overflow:hidden">
+<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><input type="file" id="pdfInput" accept=".pdf" style="flex:1"><button class="btn" style="background:#a8e0ff;width:auto" onclick="document.getElementById('pdfInput').click()">📄 Subir PDF</button><button class="btn" style="background:#ff8fb8;color:white;width:auto" onclick="leerPDFcomoAudio()">🔊 Leer este PDF como audiolibro</button><button class="btn" style="background:#fff0a8;width:auto" onclick="guardarResaltado()">💾 Guardar resaltado</button><button class="btn" style="background:#e2c6ff;width:auto" onclick="limpiarResaltado()">❌ Quitar resaltado</button></div>
+<div id="pdfToolbar" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:8px 0"><span style="font-size:12px;font-weight:bold">🖍️ Resaltador:</span><div class="color-dot" style="background:#fff176" onclick="setColorResaltado('amarillo','#fff176')"></div><div class="color-dot" style="background:#ff9ecb" onclick="setColorResaltado('rosa','#ff9ecb')"></div><div class="color-dot" style="background:#a8f1c0" onclick="setColorResaltado('verde','#a8f1c0')"></div><div class="color-dot" style="background:#a8d8ff" onclick="setColorResaltado('azul','#a8d8ff')"></div><span id="colorActual" style="font-size:12px">Color: amarillo</span><button class="btn" style="background:#fff176;width:auto" onclick="resaltarSeleccion()">🖍️ Resaltar lo que seleccioné</button></div>
+<div style="font-size:12px">📄 <span id="pdfNombre">Sin PDF</span> | Páginas: <span id="pdfPaginas">0</span></div>
+<div id="pdfViewer"><p style="text-align:center;color:#999">Subí un PDF para leer y resaltar 💖</p></div>
 </div>
+<div id="panelAudio" style="display:none;margin-top:8px;background:white;border-radius:15px;padding:12px"><b>🔊 Audiolibro grande</b><textarea id="textoAudioGrande" style="height:140px" placeholder="Acá te aparece el texto del PDF..."></textarea><div style="display:flex;gap:6px"><button class="btn" style="background:#a8e0ff;flex:1" onclick="leerAudiolibroGrande()">▶️ Leer todo</button><button class="btn" style="background:#fff0a8;flex:1" onclick="pausarAudiolibro()">⏸️ Pausa</button><button class="btn" style="background:#ffcf9e;flex:1" onclick="pararAudiolibro()">⏹️ Parar</button></div><div id="audioProgresoGrande" style="font-size:12px;text-align:center"></div></div>
+<div id="panelYTbig" style="display:none;margin-top:8px;background:white;border-radius:15px;padding:12px"><b>🎵 Música grande</b><input id="ytLinkBig" placeholder="Pegá tu link de YouTube"><button class="btn" style="background:#ff8fb8;color:white" onclick="document.getElementById('ytLink').value=document.getElementById('ytLinkBig').value;ponerYT();document.getElementById('ytFrameBig').src=document.getElementById('ytFrame').src">▶️ Poner</button><iframe id="ytFrameBig" width="100%" height="220" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen style="border-radius:12px;margin-top:8px"></iframe></div>
+<input type="file" id="subirArchivo" accept=".txt,.md,.csv,.json,.html,.css,.js" style="display:none">
 </div>
 <script>
-var engine = null;
-var cargando = false;
+var engine = null, cargando = false;
 async function cargarIA(){
   if(engine){ document.getElementById("estadoIA").innerText="✅ Privado listo"; return; }
   if(cargando) return;
-  if(!window.isSecureContext || !navigator.gpu){
-    document.getElementById("estadoIA").innerText="⚠️ Este dispositivo no tiene WebGPU. Usá Rápido.";
-    return;
-  }
+  if(!window.isSecureContext || !navigator.gpu){ document.getElementById("estadoIA").innerText="⚠️ Sin WebGPU. Usá Rápido."; return; }
   cargando = true;
   document.getElementById("estadoIA").innerText="⬇️ Descargando cerebro...";
   try{
     var mod = await import("https://esm.run/@mlc-ai/web-llm");
-    engine = await mod.CreateMLCEngine("Qwen2.5-1.5B-Instruct-q4f16_1-MLC", {
-      initProgressCallback: function(p){
-        document.getElementById("estadoIA").innerText="⬇️ Descargando: " + Math.round((p.progress || 0) * 100) + "%";
-      }
-    });
+    engine = await mod.CreateMLCEngine("Qwen2.5-1.5B-Instruct-q4f16_1-MLC", { initProgressCallback: function(p){ document.getElementById("estadoIA").innerText="⬇️ Descargando: " + Math.round((p.progress || 0) * 100) + "%"; } });
     document.getElementById("estadoIA").innerText="✅ Privado listo";
     document.getElementById("estadoCerebro").innerText="✅ Cerebro Privado listo";
-  }catch(e){
-    document.getElementById("estadoIA").innerText="❌ No se pudo cargar el modelo local: " + e.message;
-  }
+  }catch(e){ document.getElementById("estadoIA").innerText="❌ No se pudo cargar: " + e.message; }
   cargando = false;
 }
 </script>
 <script>
-function escapeHTML(s){
-  s = String(s == null ? "" : s);
-  s = s.split("&").join("&amp;");
-  s = s.split("<").join("&lt;");
-  s = s.split(">").join("&gt;");
-  s = s.split('"').join("&quot;");
-  return s;
-}
-function limpiarTexto(s){
-  s = String(s == null ? "" : s);
-  s = s.split("**").join("");
-  return s.trim();
-}
-function toggleSidebar(){
-  var s = document.getElementById("sidebar");
-  var r = document.getElementById("resizer");
-  var ocultar = s.style.display !== "none";
-  s.style.display = ocultar ? "none" : "flex";
-  r.style.display = ocultar ? "none" : "block";
-}
-async function buscarEnInternet(pregunta){
-  var q = String(pregunta || "").trim();
-  if(!q) return "";
-  var qWiki = q.split(" ").join("_");
-  var texto = "";
+function toggleBox(id){ var el=document.getElementById(id); el.classList.toggle("min"); var b=el.querySelector(".mini-btn"); if(b) b.innerText=el.classList.contains("min")?"+" : "–"; }
+function toggleSidebar(){ var s=document.getElementById("sidebar"), r=document.getElementById("resizer"); var o=s.style.display!=="none"; s.style.display=o?"none":"flex"; r.style.display=o?"none":"block"; }
+function togglePanel(id){ var ids=["panelChat","panelPDF","panelAudio","panelYTbig"]; for(var i=0;i<ids.length;i++){ var el=document.getElementById(ids[i]); if(ids[i]===id){ el.style.display=(ids[i]==="panelChat"||ids[i]==="panelPDF")?"flex":"block"; if(ids[i]!=="panelChat") el.style.flex="1"; } else el.style.display="none"; } }
+function escapeHTML(s){ s=String(s==null?"":s); s=s.split("&").join("&amp;"); s=s.split("<").join("&lt;"); s=s.split(">").join("&gt;"); s=s.split('"').join("&quot;"); return s; }
+function limpiarTexto(s){ s=String(s==null?"":s); s=s.split("**").join(""); return s.trim(); }
+function mostrarPerfil(){ var d=document.getElementById("perfilBox"); if(d.style.display==="block") d.style.display="none"; else { d.style.display="block"; document.getElementById("miPerfilTexto").value=miPerfil; } }
+function guardarPerfil(){ miPerfil=document.getElementById("miPerfilTexto").value.trim(); try{localStorage.setItem("miPerfilAgus",miPerfil);}catch(e){} aprenderDeVos("Mi perfil es: "+miPerfil); document.getElementById("perfilBox").style.display="none"; }
+function borrarTodo(){ if(!confirm("¿Borrar TODO?")) return; try{ localStorage.removeItem("miPerfilAgus"); localStorage.removeItem("chatsAgusV2"); localStorage.removeItem("ordenAgus"); localStorage.removeItem("chatActivoAgus"); localStorage.removeItem("memoriaCompartidaIAgus"); localStorage.removeItem("tareasAgus"); localStorage.removeItem("temaIAgus"); }catch(e){} location.reload(); }
+function mostrarTemas(){ var d=document.getElementById("temas"); d.style.display=d.style.display==="block"?"none":"block"; }
+function cambiarTema(){ var f=document.getElementById("cFondo").value, r=document.getElementById("cRosa").value, b=document.getElementById("cBoton").value, l=document.getElementById("cLetra").value; document.body.style.background=f; document.getElementById("sidebar").style.background=r; document.body.style.color=l; try{localStorage.setItem("temaIAgus",JSON.stringify({f:f,r:r,b:b,l:l}));}catch(e){} }
+function aplicarTema(fondo,rosa,boton,letra){ document.getElementById("cFondo").value=fondo; document.getElementById("cRosa").value=rosa; document.getElementById("cBoton").value=boton; document.getElementById("cLetra").value=letra; cambiarTema(); }
+function miUbicacion(){ if(modoActual==="privado"){ document.getElementById("ubicacion").innerText="🔒 El mapa necesita internet. Cambiá a Rápido."; return; } if(!navigator.geolocation){ document.getElementById("ubicacion").innerText="Sin geolocalización."; return; } document.getElementById("ubicacion").innerText="Buscando ubicación..."; navigator.geolocation.getCurrentPosition(function(p){ var lat=p.coords.latitude, lon=p.coords.longitude; document.getElementById("ubicacion").innerText="Ubicación: "+lat.toFixed(4)+", "+lon.toFixed(4); document.getElementById("mapaBox").style.display="block"; document.getElementById("mapa").src="https://www.openstreetmap.org/export/embed.html?bbox="+(lon-0.02)+"%2C"+(lat-0.02)+"%2C"+(lon+0.02)+"%2C"+(lat+0.02)+"&layer=mapnik&marker="+lat+"%2C"+lon; }, function(){ document.getElementById("ubicacion").innerText="No pude obtener ubicación."; }); }
+var pdfTextoTotal="", pdfColor="amarillo", pdfColorHex="#fff176";
+var pdfjsLib=window.pdfjsLib;
+if(pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+function setColorResaltado(n,h){ pdfColor=n; pdfColorHex=h; document.getElementById("colorActual").innerText="Color: "+n; }
+function resaltarSeleccion(){ var sel=window.getSelection(); if(!sel || sel.toString().trim().length===0){ alert("Seleccioná el texto primero"); return; } try{ var range=sel.getRangeAt(0); var mark=document.createElement("mark"); mark.style.background=pdfColorHex; range.surroundContents(mark); sel.removeAllRanges(); }catch(e){ alert("Seleccioná solo dentro de un párrafo"); } }
+function guardarResaltado(){ try{ localStorage.setItem("pdfResaltado_"+document.getElementById("pdfNombre").innerText, document.getElementById("pdfViewer").innerHTML); alert("Guardado 💖"); }catch(e){ alert("No pude guardar, PDF muy grande"); } }
+function limpiarResaltado(){ var marks=document.querySelectorAll("#pdfViewer mark"); for(var i=0;i<marks.length;i++){ var m=marks[i]; var p=document.createTextNode(m.innerText); m.parentNode.replaceChild(p,m); } }
+document.getElementById("pdfInput").addEventListener("change", async function(e){
+  var f=e.target.files[0]; if(!f) return;
+  document.getElementById("pdfNombre").innerText=f.name;
+  document.getElementById("pdfViewer").innerHTML="Cargando PDF...";
   try{
-    var rWiki = await fetch("https://es.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(qWiki));
-    if(rWiki.ok){
-      var dWiki = await rWiki.json();
-      if(dWiki.extract) texto += "Wikipedia - " + (dWiki.title || q) + ": " + dWiki.extract + "\n\n";
-      if(dWiki.content_urls && dWiki.content_urls.desktop && dWiki.content_urls.desktop.page) texto += "Fuente Wikipedia: " + dWiki.content_urls.desktop.page + "\n\n";
+    var buf=await f.arrayBuffer();
+    var pdf=await pdfjsLib.getDocument({data:buf}).promise;
+    document.getElementById("pdfPaginas").innerText=pdf.numPages;
+    var html=""; pdfTextoTotal="";
+    for(var p=1;p<=pdf.numPages;p++){
+      var page=await pdf.getPage(p);
+      var txt=await page.getTextContent();
+      var str="";
+      for(var k=0;k<txt.items.length;k++) str+=txt.items[k].str+" ";
+      pdfTextoTotal+=str+"\n\n";
+      html+='<div class="pdf-page"><b>Página '+p+'</b><br>'+escapeHTML(str)+'</div>';
     }
-  }catch(e){}
+    document.getElementById("pdfViewer").innerHTML=html;
+    document.getElementById("textoAudioLibro").value=pdfTextoTotal.slice(0,5000);
+    document.getElementById("textoAudioGrande").value=pdfTextoTotal.slice(0,8000);
+    var g=localStorage.getItem("pdfResaltado_"+f.name); if(g) document.getElementById("pdfViewer").innerHTML=g;
+    aprenderDeVos("Agus subió PDF: "+f.name);
+  }catch(err){ document.getElementById("pdfViewer").innerHTML="No pude leer el PDF: "+err.message; }
+});
+document.getElementById("audioPdfFile").addEventListener("change", async function(e){
+  var f=e.target.files[0]; if(!f) return;
+  document.getElementById("audioPdfStatus").innerText="Leyendo PDF...";
   try{
-    var rDDG = await fetch("https://api.duckduckgo.com/?q=" + encodeURIComponent(q) + "&format=json&no_html=1&skip_disambig=1");
-    if(rDDG.ok){
-      var dDDG = await rDDG.json();
-      if(dDDG.AbstractText) texto += "DuckDuckGo: " + dDDG.AbstractText + "\n\n";
-      if(dDDG.AbstractURL) texto += "Fuente DuckDuckGo: " + dDDG.AbstractURL + "\n\n";
-      if(dDDG.RelatedTopics && dDDG.RelatedTopics.length){
-        texto += "Temas relacionados: ";
-        for(var i=0;i<Math.min(3, dDDG.RelatedTopics.length);i++){
-          var t = dDDG.RelatedTopics[i];
-          if(t && t.Text) texto += t.Text + " | ";
-        }
-        texto += "\n";
-      }
+    var buf=await f.arrayBuffer();
+    var pdf=await pdfjsLib.getDocument({data:buf}).promise;
+    var total="";
+    for(var p=1;p<=pdf.numPages;p++){ var page=await pdf.getPage(p); var txt=await page.getTextContent(); var s=""; for(var k=0;k<txt.items.length;k++) s+=txt.items[k].str+" "; total+=s+"\n\n"; }
+    pdfTextoTotal=total;
+    document.getElementById("textoAudioLibro").value=total.slice(0,5000);
+    document.getElementById("textoAudioGrande").value=total.slice(0,8000);
+    document.getElementById("audioPdfStatus").innerText="✅ PDF listo: "+f.name;
+  }catch(err){ document.getElementById("audioPdfStatus").innerText="❌ No pude leerlo: "+err.message; }
+  e.target.value="";
+});
+function leerPDFcomoAudio(){ if(!pdfTextoTotal){ alert("Primero subí un PDF"); return; } document.getElementById("textoAudioLibro").value=pdfTextoTotal.slice(0,5000); document.getElementById("textoAudioGrande").value=pdfTextoTotal.slice(0,8000); leerAudiolibro(); togglePanel("panelAudio"); }
+function leerAudiolibroGrande(){ document.getElementById("textoAudioLibro").value=document.getElementById("textoAudioGrande").value; leerAudiolibro(); }
+var pomoSeg=25*60, pomoTotal=25*60, pomoTimer=null, pomoModo="Estudio";
+function pomoRender(){ var m=Math.floor(pomoSeg/60), s=pomoSeg%60; document.getElementById("pomoTime").innerText=(m<10?"0"+m:m)+":"+(s<10?"0"+s:s); }
+function pomoSet(min,modo){ pomoPause(); pomoModo=modo; pomoSeg=min*60; pomoTotal=min*60; document.getElementById("pomoEstado").innerText=modo+" - "+min+" min 💖"; pomoRender(); }
+function pomoStart(){ if(pomoTimer) return; document.getElementById("pomoEstado").innerText="⏳ "+pomoModo+" en curso..."; pomoTimer=setInterval(function(){ pomoSeg--; pomoRender(); if(pomoSeg<=0){ clearInterval(pomoTimer); pomoTimer=null; var msg=pomoModo==="Estudio"?"¡Terminaste estudio! Descansá 5 min 💖":"¡Descanso terminado! A estudiar 💪"; document.getElementById("pomoEstado").innerText=msg; agregarMensaje("IAgus",msg); try{ speechSynthesis.speak(new SpeechSynthesisUtterance(msg)); }catch(e){} if(pomoModo==="Estudio") pomoSet(5,"Descanso"); else pomoSet(25,"Estudio"); } },1000); }
+function pomoPause(){ if(pomoTimer){ clearInterval(pomoTimer); pomoTimer=null; document.getElementById("pomoEstado").innerText="⏸️ Pausado"; } }
+function pomoReset(){ pomoPause(); pomoSeg=pomoTotal; pomoRender(); document.getElementById("pomoEstado").innerText="Listo 💖"; }
+function extraerYTid(url){
+  if(!url) return null;
+  var id=null;
+  var idx=url.indexOf("v=");
+  if(idx!==-1) id=url.slice(idx+2, idx+13);
+  else if(url.indexOf("youtu.be/")!==-1){ var i2=url.indexOf("youtu.be/"); id=url.slice(i2+9, i2+20); }
+  else if(url.indexOf("shorts/")!==-1){ var i3=url.indexOf("shorts/"); id=url.slice(i3+7, i3+18); }
+  else if(url.indexOf("embed/")!==-1){ var i4=url.indexOf("embed/"); id=url.slice(i4+6, i4+17); }
+  if(id) id=id.split("&")[0].split("?")[0].split("/")[0];
+  if(id && id.length===11) return id;
+  return null;
+}
+function ponerYT(){
+  var url=document.getElementById("ytLink").value.trim(); if(!url){ alert("Pegá tu link"); return; }
+  var id=extraerYTid(url);
+  var listIdx=url.indexOf("list=");
+  var list=listIdx!==-1 ? url.slice(listIdx+5).split("&")[0] : null;
+  document.getElementById("ytBox").style.display="block";
+  if(list && !id) document.getElementById("ytFrame").src="https://www.youtube.com/embed/videoseries?list="+list+"&autoplay=1";
+  else if(id) document.getElementById("ytFrame").src="https://www.youtube.com/embed/"+id+"?autoplay=1"+(list?"&list="+list:"");
+  else document.getElementById("ytFrame").src="https://www.youtube.com/embed?listType=search&list="+encodeURIComponent(url)+"&autoplay=1";
+  document.getElementById("ytFrameBig").src=document.getElementById("ytFrame").src;
+}
+function ponerYTpreset(id){ document.getElementById("ytBox").style.display="block"; document.getElementById("ytFrame").src="https://www.youtube.com/embed/"+id+"?autoplay=1"; document.getElementById("ytFrameBig").src=document.getElementById("ytFrame").src; }
+var audioChunks=[], audioIdx=0, audioParado=false;
+function leerAudiolibro(){
+  var txt=document.getElementById("textoAudioLibro").value.trim() || document.getElementById("textoAudioGrande").value.trim() || document.getElementById("entrada").value.trim();
+  if(!txt){ alert("Pegá el texto o subí un PDF"); return; }
+  pararAudiolibro(); audioParado=false;
+  audioChunks=[]; var resto=txt;
+  while(resto.length>0){ var corte=Math.min(800, resto.length); var trozo=resto.slice(0,corte); audioChunks.push(trozo); resto=resto.slice(corte); }
+  audioIdx=0; document.getElementById("audioProgreso").innerText="Leyendo 1 de "+audioChunks.length+"..."; leerChunk();
+}
+function leerChunk(){ if(audioParado || audioIdx>=audioChunks.length){ if(audioIdx>=audioChunks.length) document.getElementById("audioProgreso").innerText="✅ Terminado 💖"; return; } var u=new SpeechSynthesisUtterance(audioChunks[audioIdx]); u.lang="es-AR"; u.rate=parseFloat(document.getElementById("velAudio").value); u.onend=function(){ audioIdx++; document.getElementById("audioProgreso").innerText="Leyendo "+(audioIdx+1)+" de "+audioChunks.length+"..."; leerChunk(); }; speechSynthesis.speak(u); }
+function pausarAudiolibro(){ if(speechSynthesis.paused) speechSynthesis.resume(); else speechSynthesis.pause(); }
+function pararAudiolibro(){ audioParado=true; speechSynthesis.cancel(); document.getElementById("audioProgreso").innerText=""; }
+async function generarImagen(){
+  var campo=document.getElementById("promptImagen");
+  var p=(campo && campo.value.trim()) || document.getElementById("entrada").value.trim();
+  if(!p){ alert("Escribí qué querés buscar"); return; }
+  agregarMensaje("IAgus","🔎 Buscando inspiración visual para: "+p+"...");
+  try{
+    var endpoint="https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=12&gsrsearch="+encodeURIComponent(p)+"&prop=imageinfo&iiprop=url&iiurlwidth=420&format=json&origin=*";
+    var respuesta=await fetch(endpoint);
+    if(!respuesta.ok) throw new Error("HTTP "+respuesta.status);
+    var datos=await respuesta.json();
+    var paginas=datos.query && datos.query.pages ? Object.values(datos.query.pages) : [];
+    var html="🖼️ Referencias para: "+p+"\n\n";
+    var count=0;
+    for(var i=0;i<paginas.length;i++){
+      var pg=paginas[i]; var info=pg.imageinfo && pg.imageinfo[0]; if(!info) continue;
+      var mini=info.thumburl || info.url; var orig=info.descriptionurl || info.url;
+      if(!mini || mini.indexOf("https://")!==0) continue;
+      html+="Imagen "+(count+1)+": "+String(pg.title||"").split("File:").join("")+"\nLink: "+orig+"\nImagen: "+mini+"\n\n";
+      count++;
+      agregarMensajeImagen(mini, String(pg.title||"Imagen"));
     }
-  }catch(e){}
-  if(!texto) texto = "No encontré nada en Wikipedia ni en DuckDuckGo para: " + q;
-  return texto.slice(0, 4000);
+    if(count===0) html+="No encontré imágenes, probá con otras palabras.";
+    agregarMensaje("IAgus", html);
+    if(campo) campo.value="";
+  }catch(e){ agregarMensaje("IAgus","❌ No pude buscar imágenes: "+e.message); }
 }
-async function buscarInternetBoton(){
-  var q = document.getElementById("buscarInternetInput").value.trim() || document.getElementById("entrada").value.trim();
-  if(!q){ alert("Escribí qué querés buscar"); return; }
-  document.getElementById("resultadoInternet").innerText = "Buscando en Wikipedia + DuckDuckGo...";
-  document.getElementById("estadoIA").innerText = "🌐 Buscando en Wikipedia + DuckDuckGo...";
-  var res = await buscarEnInternet(q);
-  document.getElementById("resultadoInternet").innerText = res;
-  agregarMensaje("IAgus", "🌐 Busqué en Wikipedia + DuckDuckGo sobre: " + q + "\n\n" + res);
-  document.getElementById("estadoIA").innerText = "🌐 Listo";
-  document.getElementById("buscarInternetInput").value = "";
-}
-function necesitaInternet(mensaje){
-  var m = String(mensaje || "").toLowerCase();
-  if(m.indexOf("qué es") !== -1) return true;
-  if(m.indexOf("que es") !== -1) return true;
-  if(m.indexOf("quién") !== -1) return true;
-  if(m.indexOf("quien") !== -1) return true;
-  if(m.indexOf("cuándo") !== -1) return true;
-  if(m.indexOf("cuando") !== -1) return true;
-  if(m.indexOf("dónde") !== -1) return true;
-  if(m.indexOf("donde") !== -1) return true;
-  if(m.indexOf("buscá") !== -1) return true;
-  if(m.indexOf("busca") !== -1) return true;
-  if(m.indexOf("?") !== -1) return true;
-  if(m.indexOf("significa") !== -1) return true;
-  if(m.indexOf("explícame") !== -1) return true;
-  if(m.indexOf("explicame") !== -1) return true;
-  return false;
-}
-var geminiKeyEnMemoria = "";
-var modoActual = "rapido";
-var chats = {};
-var orden = [];
-var sec = "general";
-var mensajesMostrados = [];
-var miPerfil = "";
-var memoriaAgus = [];
-try{
-  chats = JSON.parse(localStorage.getItem("chatsAgusV2") || "{}");
-  orden = JSON.parse(localStorage.getItem("ordenAgus") || "[]");
-  memoriaAgus = JSON.parse(localStorage.getItem("memoriaCompartidaIAgus") || "[]");
-}catch(e){ chats={}; orden=[]; memoriaAgus=[]; }
-if(!orden.length){
-  sec="general"; chats.general=chats.general||[];
-  orden=[{id:"general",nombre:"General",emoji:"💖"}];
-}
-sec = localStorage.getItem("chatActivoAgus") || orden[0].id;
-if(!chats[sec]) sec = orden[0].id;
-function guardar(){
-  try{
-    localStorage.setItem("chatsAgusV2", JSON.stringify(chats));
-    localStorage.setItem("ordenAgus", JSON.stringify(orden));
-    localStorage.setItem("chatActivoAgus", sec);
-    localStorage.setItem("memoriaCompartidaIAgus", JSON.stringify(memoriaAgus));
-  }catch(e){}
-}
-function aprenderDeVos(t){
-  t = String(t||"").trim();
-  if(!t) return;
-  memoriaAgus.push({texto:t.slice(0,500), fecha:new Date().toISOString()});
-  if(memoriaAgus.length>250) memoriaAgus = memoriaAgus.slice(-250);
-  guardar();
-}
-function construirMemoria(){
-  var partes=[];
-  if(miPerfil) partes.push("Perfil: "+miPerfil);
-  for(var i=0;i<memoriaAgus.length;i++){ if(memoriaAgus[i].texto) partes.push(memoriaAgus[i].texto); }
-  return partes.join("\n").slice(-2000);
-}
-function agregarMensaje(quien, texto){
-  var item={q:quien, t:String(texto), fecha:new Date().toISOString()};
-  mensajesMostrados.push(item);
-  if(!chats[sec]) chats[sec]=[];
-  chats[sec].push(item);
+function agregarMensajeImagen(url, titulo){
   var chat=document.getElementById("chat");
   var div=document.createElement("div");
-  div.className="msg "+(quien==="Vos"?"vos":"ia");
-  div.innerHTML="<b>"+(quien==="Vos"?"Vos":"IAgus")+"</b><br>"+escapeHTML(texto);
-  chat.appendChild(div);
-  chat.scrollTop=chat.scrollHeight;
-  guardar();
+  div.className="msg ia";
+  var b=document.createElement("b"); b.textContent="IAgus - "+titulo; div.appendChild(b); div.appendChild(document.createElement("br"));
+  var img=document.createElement("img"); img.src=url; img.alt=titulo; div.appendChild(img);
+  chat.appendChild(div); chat.scrollTop=chat.scrollHeight;
 }
-function mostrarChat(){
-  var chat=document.getElementById("chat");
-  chat.innerHTML="";
-  for(var i=0;i<mensajesMostrados.length;i++){
-    var m=mensajesMostrados[i];
-    var div=document.createElement("div");
-    div.className="msg "+(m.q==="Vos"?"vos":"ia");
-    div.innerHTML="<b>"+(m.q==="Vos"?"Vos":"IAgus")+"</b><br>"+escapeHTML(m.t);
-    chat.appendChild(div);
-  }
-  chat.scrollTop=chat.scrollHeight;
+async function buscarEnInternet(pregunta){
+  var q=String(pregunta||"").trim(); if(!q) return "";
+  var qWiki=q.split(" ").join("_"); var texto="";
+  try{ var rWiki=await fetch("https://es.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(qWiki)); if(rWiki.ok){ var dWiki=await rWiki.json(); if(dWiki.extract) texto+="Wikipedia - "+(dWiki.title||q)+": "+dWiki.extract+"\n\n"; if(dWiki.content_urls && dWiki.content_urls.desktop && dWiki.content_urls.desktop.page) texto+="Fuente Wikipedia: "+dWiki.content_urls.desktop.page+"\n\n"; } }catch(e){}
+  try{ var rDDG=await fetch("https://api.duckduckgo.com/?q="+encodeURIComponent(q)+"&format=json&no_html=1&skip_disambig=1"); if(rDDG.ok){ var dDDG=await rDDG.json(); if(dDDG.AbstractText) texto+="DuckDuckGo: "+dDDG.AbstractText+"\n\n"; if(dDDG.AbstractURL) texto+="Fuente DuckDuckGo: "+dDDG.AbstractURL+"\n\n"; } }catch(e){}
+  if(!texto) texto="No encontré nada en Wikipedia ni DuckDuckGo para: "+q;
+  return texto.slice(0,4000);
 }
-function renderLista(){
-  var h="";
-  for(var i=0;i<orden.length;i++){
-    var c=orden[i];
-    h+='<button class="btn" style="background:white" onclick="cambiar(\''+c.id+'\')">'+escapeHTML(c.emoji)+' '+escapeHTML(c.nombre)+'</button>';
-  }
-  document.getElementById("listaChats").innerHTML=h;
+async function buscarInternetBoton(){
+  var q=document.getElementById("buscarInternetInput").value.trim() || document.getElementById("entrada").value.trim();
+  if(!q){ alert("Escribí qué querés buscar"); return; }
+  document.getElementById("resultadoInternet").innerText="Buscando...";
+  var res=await buscarEnInternet(q);
+  document.getElementById("resultadoInternet").innerText=res;
+  agregarMensaje("IAgus","🌐 Busqué en Wikipedia + DuckDuckGo sobre: "+q+"\n\n"+res);
+  document.getElementById("buscarInternetInput").value="";
 }
-function crearChat(){
-  var n=prompt("Nombre del chat"); if(!n) return;
-  var id="chat_"+Date.now();
-  chats[id]=[]; orden.push({id:id,nombre:n,emoji:"💖"}); sec=id;
-  guardar(); renderLista(); mensajesMostrados=[]; mostrarChat();
+function necesitaInternet(mensaje){
+  var m=String(mensaje||"").toLowerCase();
+  if(m.indexOf("qué es")!==-1) return true;
+  if(m.indexOf("que es")!==-1) return true;
+  if(m.indexOf("quién")!==-1) return true;
+  if(m.indexOf("quien")!==-1) return true;
+  if(m.indexOf("cuándo")!==-1) return true;
+  if(m.indexOf("cuando")!==-1) return true;
+  if(m.indexOf("dónde")!==-1) return true;
+  if(m.indexOf("donde")!==-1) return true;
+  if(m.indexOf("buscá")!==-1) return true;
+  if(m.indexOf("busca")!==-1) return true;
+  if(m.indexOf("?")!==-1) return true;
+  if(m.indexOf("significa")!==-1) return true;
+  if(m.indexOf("explicame")!==-1) return true;
+  if(m.indexOf("explícame")!==-1) return true;
+  return false;
 }
-function cambiar(id){
-  sec=id; guardar(); renderLista();
-  mensajesMostrados=[]; var lista=chats[sec]||[];
-  for(var i=0;i<lista.length;i++) mensajesMostrados.push(lista[i]);
-  mostrarChat();
+var geminiKeyEnMemoria="", modoActual="rapido", chats={}, orden=[], sec="general", mensajesMostrados=[], miPerfil="", memoriaAgus=[], tareas=[];
+try{ chats=JSON.parse(localStorage.getItem("chatsAgusV2")||"{}"); orden=JSON.parse(localStorage.getItem("ordenAgus")||"[]"); memoriaAgus=JSON.parse(localStorage.getItem("memoriaCompartidaIAgus")||"[]"); tareas=JSON.parse(localStorage.getItem("tareasAgus")||"[]"); miPerfil=localStorage.getItem("miPerfilAgus")||""; }catch(e){ chats={}; orden=[]; memoriaAgus=[]; tareas=[]; miPerfil=""; }
+if(!orden.length){ sec="general"; chats.general=chats.general||[]; orden=[{id:"general",nombre:"General",emoji:"💖"}]; }
+sec=localStorage.getItem("chatActivoAgus")||orden[0].id; if(!chats[sec]) sec=orden[0].id;
+function guardar(){ try{ localStorage.setItem("chatsAgusV2",JSON.stringify(chats)); localStorage.setItem("ordenAgus",JSON.stringify(orden)); localStorage.setItem("chatActivoAgus",sec); localStorage.setItem("memoriaCompartidaIAgus",JSON.stringify(memoriaAgus)); localStorage.setItem("tareasAgus",JSON.stringify(tareas)); }catch(e){} }
+function aprenderDeVos(t){ t=String(t||"").trim(); if(!t) return; memoriaAgus.push({texto:t.slice(0,500),fecha:new Date().toISOString()}); if(memoriaAgus.length>250) memoriaAgus=memoriaAgus.slice(-250); guardar(); }
+function construirMemoria(){ var partes=[]; if(miPerfil) partes.push("Perfil: "+miPerfil); for(var i=0;i<memoriaAgus.length;i++){ if(memoriaAgus[i].texto) partes.push(memoriaAgus[i].texto); } return partes.join("\n").slice(-2000); }
+function agregarMensaje(quien, texto){
+  var item={q:quien,t:String(texto),fecha:new Date().toISOString()};
+  mensajesMostrados.push(item); if(!chats[sec]) chats[sec]=[]; chats[sec].push(item);
+  var chat=document.getElementById("chat"); var div=document.createElement("div"); div.className="msg "+(quien==="Vos"?"vos":"ia"); div.innerHTML="<b>"+(quien==="Vos"?"Vos":"IAgus")+"</b><br>"+escapeHTML(texto).split("\n").join("<br>"); chat.appendChild(div); chat.scrollTop=chat.scrollHeight; guardar();
 }
-function cambiarModo(modo){
-  modoActual = modo==="privado" ? "privado" : "rapido";
-  document.getElementById("btnAdulta").classList.toggle("modo-activo", modoActual==="rapido");
-  document.getElementById("btnPrivado").classList.toggle("modo-activo", modoActual==="privado");
-  document.getElementById("modoTexto").innerText = modoActual==="privado" ? "🔒 Privado: responde en tu tablet + busca en Wiki/DDG" : "⚡ Rápido: responde con Gemini + busca en Wiki/DDG";
-  document.getElementById("estadoIA").innerText = modoActual==="privado" ? (engine ? "🔒 Privado listo" : "🔒 Cargá el Cerebro") : "⚡ Modo Rápido";
-}
-function guardarKey(){
-  var k=document.getElementById("geminiKey").value.trim();
-  if(!k){ alert("Pegá tu llave"); return; }
-  geminiKeyEnMemoria=k;
-  document.getElementById("keyEstado").innerText="✅ Llave cargada";
-}
+function mostrarChat(){ var chat=document.getElementById("chat"); chat.innerHTML=""; for(var i=0;i<mensajesMostrados.length;i++){ var m=mensajesMostrados[i]; var div=document.createElement("div"); div.className="msg "+(m.q==="Vos"?"vos":"ia"); div.innerHTML="<b>"+(m.q==="Vos"?"Vos":"IAgus")+"</b><br>"+escapeHTML(m.t).split("\n").join("<br>"); chat.appendChild(div); } chat.scrollTop=chat.scrollHeight; }
+function renderLista(){ var h=""; for(var i=0;i<orden.length;i++){ var c=orden[i]; h+='<button class="btn" style="background:white" onclick="cambiar(\''+c.id+'\')">'+escapeHTML(c.emoji)+' '+escapeHTML(c.nombre)+'</button>'; } document.getElementById("listaChats").innerHTML=h; }
+function crearChat(){ var n=prompt("Nombre del chat"); if(!n) return; var id="chat_"+Date.now(); chats[id]=[]; orden.push({id:id,nombre:n,emoji:"💖"}); sec=id; guardar(); renderLista(); mensajesMostrados=[]; mostrarChat(); }
+function cambiar(id){ sec=id; guardar(); renderLista(); mensajesMostrados=[]; var lista=chats[sec]||[]; for(var i=0;i<lista.length;i++) mensajesMostrados.push(lista[i]); mostrarChat(); }
+function cambiarModo(modo){ modoActual=modo==="privado"?"privado":"rapido"; document.getElementById("btnAdulta").classList.toggle("modo-activo",modoActual==="rapido"); document.getElementById("btnPrivado").classList.toggle("modo-activo",modoActual==="privado"); document.getElementById("modoTexto").innerText=modoActual==="privado"?"🔒 Privado: tablet + Wiki/DDG":"⚡ Rápido: Gemini + Wiki/DDG"; document.getElementById("estadoIA").innerText=modoActual==="privado"?(engine?"🔒 Privado listo":"🔒 Cargá el Cerebro"):"⚡ Modo Rápido"; }
+function guardarKey(){ var k=document.getElementById("geminiKey").value.trim(); if(!k){ alert("Pegá tu llave"); return; } geminiKeyEnMemoria=k; document.getElementById("keyEstado").innerText="✅ Llave cargada"; }
 async function probarKey(){
   var key=geminiKeyEnMemoria || document.getElementById("geminiKey").value.trim();
   if(!key){ document.getElementById("keyEstado").innerText="❌ Pegá primero tu llave"; return; }
-  geminiKeyEnMemoria=key;
-  document.getElementById("keyEstado").innerText="Probando...";
+  geminiKeyEnMemoria=key; document.getElementById("keyEstado").innerText="Probando...";
   try{
-    var r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","x-goog-api-key":key},
-      body:JSON.stringify({contents:[{parts:[{text:"Respondé solo: Hola"}]}]})
-    });
-    if(r.ok){ document.getElementById("keyEstado").innerText="✅ La conexión con Gemini funciona"; }
-    else{
-      var txt=await r.text();
-      document.getElementById("keyEstado").innerText="❌ Error "+r.status+": "+txt.slice(0,200);
-    }
+    var r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",{ method:"POST", headers:{"Content-Type":"application/json","x-goog-api-key":key}, body:JSON.stringify({contents:[{parts:[{text:"Respondé solo: Hola"}]}]}) });
+    if(r.ok) document.getElementById("keyEstado").innerText="✅ La conexión con Gemini funciona";
+    else { var txt=await r.text(); document.getElementById("keyEstado").innerText="❌ Error "+r.status+": "+txt.slice(0,300); }
   }catch(e){ document.getElementById("keyEstado").innerText="❌ No pude conectar: "+e.message; }
 }
 async function hablarConGemini(mensaje, infoInternet){
@@ -294,107 +319,65 @@ async function hablarConGemini(mensaje, infoInternet){
   if(!key) return "❌ Pegá tu llave en Rápido y tocá Activar llave.";
   geminiKeyEnMemoria=key;
   var historial=[];
-  for(var i=0;i<mensajesMostrados.length;i++){
-    var m=mensajesMostrados[i];
-    if(m.q!=="Vos" && m.q!=="IAgus") continue;
-    var t=String(m.t).slice(0,1200);
-    var role=m.q==="Vos"?"user":"model";
-    var ultimo=historial[historial.length-1];
-    if(ultimo && ultimo.role===role) ultimo.parts[0].text += "\n"+t;
-    else historial.push({role:role, parts:[{text:t}]});
-  }
+  for(var i=0;i<mensajesMostrados.length;i++){ var m=mensajesMostrados[i]; if(m.q!=="Vos" && m.q!=="IAgus") continue; var t=String(m.t).slice(0,1200); var role=m.q==="Vos"?"user":"model"; var ultimo=historial[historial.length-1]; if(ultimo && ultimo.role===role) ultimo.parts[0].text+="\n"+t; else historial.push({role:role,parts:[{text:t}]}); }
   historial=historial.slice(-14);
-  var r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",{
-    method:"POST",
-    headers:{"Content-Type":"application/json","x-goog-api-key":key},
-    body:JSON.stringify({
-      systemInstruction:{parts:[{text:"Sos IAgus, amiga argentina, hablá normal. Usá esta info de Wikipedia + DuckDuckGo cuando venga, no inventes. Info de internet:\n"+(infoInternet||"Sin info de internet.")]},
-      contents:historial,
-      generationConfig:{temperature:0.7, maxOutputTokens:1000}
-    })
-  });
-  if(!r.ok){
-    var txt=await r.text();
-    return "❌ Gemini error "+r.status+": "+txt.slice(0,500);
-  }
-  var d=await r.json();
-  var partes=d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts;
-  var out="";
-  if(partes){ for(var j=0;j<partes.length;j++){ if(partes[j].text) out+=partes[j].text; } }
-  if(out) return limpiarTexto(out).slice(0,1800);
-  return "Gemini no devolvió texto. Probá de nuevo.";
+  var r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",{ method:"POST", headers:{"Content-Type":"application/json","x-goog-api-key":key}, body:JSON.stringify({ systemInstruction:{parts:[{text:"Sos IAgus, amiga argentina, hablá normal. Usá esta info de Wikipedia + DuckDuckGo, no inventes. Info:\n"+(infoInternet||"Sin info")}]}, contents:historial, generationConfig:{temperature:0.7,maxOutputTokens:1000} }) });
+  if(!r.ok){ var txt=await r.text(); return "❌ Gemini error "+r.status+": "+txt.slice(0,500); }
+  var d=await r.json(); var partes=d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts; var out=""; if(partes){ for(var j=0;j<partes.length;j++){ if(partes[j].text) out+=partes[j].text; } } if(out) return limpiarTexto(out).slice(0,1800); return "Gemini no devolvió texto.";
 }
 async function hablarConIA(mensaje){
-  var memoria=construirMemoria();
-  var infoInternet = "";
-  if(necesitaInternet(mensaje)){
-    document.getElementById("estadoIA").innerText = "🌐 Buscando en Wikipedia + DuckDuckGo...";
-    infoInternet = await buscarEnInternet(mensaje);
-  }
+  var memoria=construirMemoria(); var infoInternet="";
+  if(necesitaInternet(mensaje)){ document.getElementById("estadoIA").innerText="🌐 Buscando en Wikipedia + DuckDuckGo..."; infoInternet=await buscarEnInternet(mensaje); }
   if(modoActual==="privado"){
-    if(infoInternet && necesitaInternet(mensaje)){
-      return "🌐 Encontré esto en Wikipedia + DuckDuckGo, sin usar el cerebro para que no lagee:\n\n" + infoInternet;
-    }
+    if(infoInternet && necesitaInternet(mensaje)) return "🌐 Encontré esto en Wikipedia + DuckDuckGo, sin usar el cerebro para que no lagee:\n\n"+infoInternet;
     if(!engine) return "🔒 Tocá Descargar Cerebro Privado y esperá a ✅ Privado listo.";
     try{
-      var hist=[];
-      for(var i=0;i<mensajesMostrados.length;i++){
-        var m=mensajesMostrados[i];
-        if(m.q==="Vos" || m.q==="IAgus") hist.push({role:m.q==="Vos"?"user":"assistant", content:String(m.t).slice(0,300)});
-      }
-      hist=hist.slice(-4);
-      var resp=await engine.chat.completions.create({
-        messages:[{role:"system", content:"Sos IAgus, amiga argentina, respondé corto, máximo 2 frases."}].concat(hist),
-        temperature:0.7,
-        max_tokens:200
-      });
-      var t2=resp && resp.choices && resp.choices[0] && resp.choices[0].message && resp.choices[0].message.content;
-      if(t2) return limpiarTexto(t2).slice(0,800);
-      return "No pude generar respuesta local.";
-    }catch(e){
-      return "❌ Modelo local falló, la tablet no lo bancó: "+e.message;
-    }
+      var hist=[]; for(var i=0;i<mensajesMostrados.length;i++){ var m=mensajesMostrados[i]; if(m.q==="Vos"||m.q==="IAgus") hist.push({role:m.q==="Vos"?"user":"assistant",content:String(m.t).slice(0,300)}); } hist=hist.slice(-4);
+      var resp=await engine.chat.completions.create({ messages:[{role:"system",content:"Sos IAgus, amiga argentina, respondé corto, máximo 2 frases."}].concat(hist), temperature:0.7, max_tokens:200 });
+      var t2=resp && resp.choices && resp.choices[0] && resp.choices[0].message && resp.choices[0].message.content; if(t2) return limpiarTexto(t2).slice(0,800); return "No pude generar respuesta local.";
+    }catch(e){ return "❌ Modelo local falló: "+e.message; }
   }
-  try{
-    var g=await hablarConGemini(mensaje, infoInternet);
-    return g;
-  }catch(e){ return "❌ Error Gemini: "+e.message; }
+  try{ var g=await hablarConGemini(mensaje, infoInternet); return g; }catch(e){ return "❌ Error Gemini: "+e.message; }
 }
-async function responderIA(mensaje){
-  try{
-    var r=await hablarConIA(mensaje);
-    agregarMensaje("IAgus", r || "⚠️ No pude responder.");
-  }catch(e){
-    agregarMensaje("IAgus", "⚠️ Error: "+e.message);
-  }
-}
+async function responderIA(mensaje){ try{ var r=await hablarConIA(mensaje); agregarMensaje("IAgus", r || "⚠️ No pude responder."); }catch(e){ agregarMensaje("IAgus","⚠️ Error: "+e.message); } }
 async function hablar(){
-  var entrada=document.getElementById("entrada");
-  var mensaje=entrada.value.trim();
-  if(!mensaje) return;
-  entrada.value="";
-  agregarMensaje("Vos", mensaje);
-  aprenderDeVos("Usuaria dijo: "+mensaje);
-  document.getElementById("estadoIA").innerText = modoActual==="privado" ? "🔒 Pensando..." : "⚡ Pensando...";
-  var boton=document.getElementById("btnEnviar");
-  if(boton) boton.disabled=true;
+  var entrada=document.getElementById("entrada"); var mensaje=entrada.value.trim(); if(!mensaje) return;
+  entrada.value=""; agregarMensaje("Vos", mensaje); aprenderDeVos("Usuaria dijo: "+mensaje);
+  document.getElementById("estadoIA").innerText=modoActual==="privado"?"🔒 Pensando...":"⚡ Pensando...";
+  var boton=document.getElementById("btnEnviar"); if(boton) boton.disabled=true;
   await responderIA(mensaje);
-  document.getElementById("estadoIA").innerText = modoActual==="privado" ? "🔒 Modo Privado" : "⚡ Modo Rápido";
+  document.getElementById("estadoIA").innerText=modoActual==="privado"?"🔒 Modo Privado":"⚡ Modo Rápido";
   if(boton) boton.disabled=false;
 }
-function leerUltimo(){
-  try{ var u=new SpeechSynthesisUtterance(document.getElementById("chat").innerText.slice(-400)); u.lang="es-AR"; speechSynthesis.speak(u); }catch(e){}
+function renderTareas(){ var cont=document.getElementById("listaTareas"); if(!cont) return; cont.innerHTML=""; for(var i=0;i<tareas.length;i++){ (function(i){ var t=tareas[i]; var div=document.createElement("div"); div.className="tarea"+(t.hecha?" hecha":""); var label=document.createElement("span"); label.textContent=t.texto; var acc=document.createElement("span"); var chk=document.createElement("input"); chk.type="checkbox"; chk.checked=!!t.hecha; chk.style.width="auto"; chk.onchange=function(){ t.hecha=chk.checked; guardar(); renderTareas(); }; var del=document.createElement("button"); del.textContent="✕"; del.onclick=function(){ tareas.splice(i,1); guardar(); renderTareas(); }; acc.appendChild(chk); acc.appendChild(del); div.appendChild(label); div.appendChild(acc); cont.appendChild(div); })(i); } }
+function agregarTareaManual(){ var input=document.getElementById("nuevaTarea"); var texto=input.value.trim(); if(!texto) return; tareas.push({texto:texto,hecha:false}); input.value=""; guardar(); renderTareas(); }
+function resumenDia(){ var pend=[]; for(var i=0;i<tareas.length;i++){ if(!tareas[i].hecha) pend.push(tareas[i]); } var texto=pend.length?pend.map(function(t,i){ return (i+1)+". "+t.texto; }).join("\n"):"No tenés tareas pendientes."; agregarMensaje("IAgus","📅 Tu día:\n"+texto); }
+function buscarRapido(){ var q=document.getElementById("buscarInput").value.trim().toLowerCase(); var out=document.getElementById("resultadoBuscar"); if(!q){ out.innerText="Escribí qué querés buscar."; return; } var hallados=[]; for(var id in chats){ var lista=chats[id]||[]; for(var i=0;i<lista.length;i++){ if(String(lista[i].t).toLowerCase().indexOf(q)!==-1) hallados.push((lista[i].q==="Vos"?"Vos: ":"IAgus: ")+String(lista[i].t).slice(0,220)); } } for(var j=0;j<memoriaAgus.length;j++){ if(String(memoriaAgus[j].texto).toLowerCase().indexOf(q)!==-1) hallados.push("Memoria: "+memoriaAgus[j].texto); } out.innerText=hallados.length?hallados.slice(-12).join("\n\n"):"No encontré en tus chats ni memoria."; }
+var grabando=false, recorder=null, trozos=[];
+function grabarAudio(){
+  var btn2=document.getElementById("btnAudio2");
+  if(!grabando){
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ alert("Tu tablet no deja grabar"); return; }
+    navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+      recorder=new MediaRecorder(stream); trozos=[];
+      recorder.ondataavailable=function(e){ trozos.push(e.data); };
+      recorder.onstop=function(){ var audio=new Blob(trozos,{type:"audio/webm"}); var url=URL.createObjectURL(audio); agregarMensaje("Vos","🎤 Audio grabado"); var chat=document.getElementById("chat"); var a=document.createElement("audio"); a.controls=true; a.src=url; chat.appendChild(a); stream.getTracks().forEach(function(tr){ tr.stop(); }); };
+      recorder.start(); grabando=true; if(btn2) btn2.innerText="⏹️ Parar";
+    }).catch(function(){ alert("No pude acceder al micrófono."); });
+  } else { try{ recorder.stop(); }catch(e){} grabando=false; if(btn2) btn2.innerText="🎤 Grabar"; }
 }
-document.getElementById("entrada").addEventListener("keydown", function(e){
-  if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); hablar(); }
-});
-document.getElementById("buscarInternetInput").addEventListener("keydown", function(e){
-  if(e.key==="Enter"){ e.preventDefault(); buscarInternetBoton(); }
-});
-renderLista();
-mensajesMostrados=(chats[sec]||[]).slice();
-cambiarModo("rapido");
-mostrarChat();
+function leerUltimo(){ try{ var u=new SpeechSynthesisUtterance(document.getElementById("chat").innerText.slice(-400)); u.lang="es-AR"; speechSynthesis.speak(u); }catch(e){} }
+document.getElementById("subirArchivo").addEventListener("change", function(e){ var f=e.target.files[0]; if(!f) return; var reader=new FileReader(); reader.onload=function(){ var c=String(reader.result||""); aprenderDeVos("Agus subió "+f.name+": "+c.slice(0,1000)); agregarMensaje("Vos","📎 "+f.name+"\n"+c.slice(0,1200)); }; reader.readAsText(f); });
+document.getElementById("entrada").addEventListener("keydown", function(e){ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); hablar(); } });
+document.getElementById("buscarInput").addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); buscarRapido(); } });
+document.getElementById("buscarInternetInput").addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); buscarInternetBoton(); } });
+(function(){ var res=document.getElementById("resizer"), side=document.getElementById("sidebar"), dragging=false; function start(e){ dragging=true; e.preventDefault(); } function move(e){ if(!dragging) return; var x=e.touches?e.touches[0].clientX:e.clientX; if(x>160 && x<520) side.style.width=x+"px"; } function end(){ dragging=false; } res.addEventListener("mousedown",start); res.addEventListener("touchstart",start); document.addEventListener("mousemove",move); document.addEventListener("touchmove",move); document.addEventListener("mouseup",end); document.addEventListener("touchend",end); })();
+try{
+  renderLista(); renderTareas();
+  var tg=localStorage.getItem("temaIAgus"); if(tg){ try{ var th=JSON.parse(tg); document.body.style.background=th.f; document.getElementById("sidebar").style.background=th.r; document.body.style.color=th.l; document.getElementById("cFondo").value=th.f; document.getElementById("cRosa").value=th.r; document.getElementById("cBoton").value=th.b; document.getElementById("cLetra").value=th.l; }catch(e){} }
+  var cg=localStorage.getItem("chatActivoAgus"); if(cg && chats[cg]) sec=cg;
+  mensajesMostrados=(chats[sec]||[]).slice(); cambiarModo("rapido"); mostrarChat(); pomoRender(); guardar();
+}catch(e){ console.warn(e); }
 </script>
 </body>
 </html>
