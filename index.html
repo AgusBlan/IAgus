@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IAgus</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon.png">
-<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/173.png">
+<link rel="apple-touch-icon" href="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/173.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#ffc7dd">
@@ -44,7 +44,7 @@ mark{background:#fff176;padding:1px 2px;border-radius:3px}
 </head>
 <body>
 <div class="sidebar" id="sidebar">
-<h3 style="text-align:center;background:white;border-radius:15px;padding:8px;margin:0">🌸 IAgus<br><span style="font-size:11px">v54 Fluida como persona</span></h3>
+<h3 style="text-align:center;background:white;border-radius:15px;padding:8px;margin:0">🌸 IAgus<br><span style="font-size:11px">v57 Todo junto - Gemini 3.8</span></h3>
 <div style="display:flex;gap:6px">
 <button class="modo-btn" id="btnAdulta" style="background:#a8e0ff" onclick="cambiarModo('rapido')">⚡ Rápido</button>
 <button class="modo-btn" id="btnPrivado" style="background:#b8f1cc" onclick="cambiarModo('privado')">🔒 Privado</button>
@@ -101,7 +101,6 @@ mark{background:#fff176;padding:1px 2px;border-radius:3px}
 <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn" style="background:#b8f1cc;width:auto" onclick="cargarIA()">⬇️ Cerebro Privado (no tocar)</button><input type="file" id="subirArchivo" style="display:none"><button class="btn" style="background:#fff0a8;width:auto" onclick="document.getElementById('subirArchivo').click()">📎 Subir archivo</button><button class="btn" style="background:#a8e0ff;width:auto" id="btnAudio" onclick="grabarAudio()">🎤 Grabar</button><button class="btn" style="background:#e2c6ff;width:auto" onclick="leerUltimo()">🔊 Leeme lo último</button></div>
 </div>
 <script>
-if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js'); }
 var engine=null, cargando=false;
 async function cargarIA(){ if(engine) return; if(cargando) return; cargando=true; document.getElementById("estadoIA").innerText="⬇️ Descargando cerebro Privado..."; try{ var mod=await import("https://esm.run/@mlc-ai/web-llm"); engine=await mod.CreateMLCEngine("Qwen2.5-1.5B-Instruct-q4f16_1-MLC",{initProgressCallback:(p)=>{document.getElementById("estadoIA").innerText="⬇️ "+Math.round(p.progress*100)+"%";}}); document.getElementById("estadoIA").innerText="✅ Privado listo"; cargando=false; }catch(e){ document.getElementById("estadoIA").innerText="Usá el Rápido, anda igual."; cargando=false; } }
 </script>
@@ -187,14 +186,13 @@ async function buscarEnTodo(mensaje){
   var q=mensaje.toLowerCase().replace(/quien es|quién es|que es|qué es|que significa|quién fue|quien fue/g,"").trim();
   if(!q) q=mensaje; q=q.charAt(0).toUpperCase()+q.slice(1);
   var resultados=[];
-  var p1=fetchConTimeout("https://es.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(q)).then(async r=>{ if(r&&r.ok){ var d=await r.json(); if(d.extract) resultados.push("📚 Wikipedia: "+d.extract.slice(0,700)); } }).catch(()=>{});
-  var p2=fetchConTimeout("https://api.duckduckgo.com/?q="+encodeURIComponent(q)+"&format=json&no_html=1&skip_disambig=1").then(async r=>{ if(r&&r.ok){ var d=await r.json(); if(d.AbstractText) resultados.push("🦆 DuckDuckGo: "+d.AbstractText.slice(0,700)); } }).catch(()=>{});
-  await Promise.all([p1,p2]);
+  var p1=fetchConTimeout("https://es.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(q)).then(async r=>{ if(r&&r.ok){ var d=await r.json(); if(d.extract) resultados.push(d.extract.slice(0,700)); } }).catch(()=>{});
+  await Promise.all([p1]);
   return resultados.join("\n\n");
 }
 async function buscarRapido(){
   var q=document.getElementById("buscarInput").value.trim(); if(!q) return;
-  document.getElementById("resultadoBuscar").innerText="Buscando en Wikipedia + DuckDuckGo...";
+  document.getElementById("resultadoBuscar").innerText="Buscando...";
   var mem=await buscarEnMemoria(q); var txt="";
   if(mem.length>0) txt+="🧠 En tu memoria:\n"+mem.slice(-3).join("\n")+"\n\n";
   var todo=await buscarEnTodo(q);
@@ -238,7 +236,7 @@ function hablar(){
     generarImagen(); return;
   }
   if(ml.includes("pomodoro")){
-    mensajesMostrados.push({q:"IAgus",t:"💭 poniendo pomodoro..."});
+    mensajesMostrados.push({q:"IAgus",t:"💭 pensando..."});
     mostrarChat();
     setTimeout(function(){ mensajesMostrados.pop(); pomoSet(25,"Estudio"); pomoStart(); agregarMensaje("IAgus","Pomodoro 25 min empezado 🍅"); },300);
     return;
@@ -252,10 +250,10 @@ async function responderIA(mensaje){
     var r=await hablarConIA(mensaje);
     mensajesMostrados.pop();
     if(r){ agregarMensaje("IAgus",r); aprenderDeVos("IAgus respondió: "+r.slice(0,200)); }
-    else{ agregarMensaje("IAgus","Ay, no encontré nada de eso, pero contame más, ¿qué querés saber de eso?"); }
+    else{ agregarMensaje("IAgus","Ay, se me trabó un segundito, pero acá estoy 💖 Contame de nuevo, ¿qué me decías?"); }
   }catch(e){ mensajesMostrados.pop(); agregarMensaje("IAgus","Ay, se me trabó un segundito, pero acá estoy 💖 Contame de nuevo, ¿qué me decías?"); }
 }
-function limpiarRespuesta(t){ if(!t) return ""; t=t.replace(/\*\*LECCION:.*$/gim,"").replace(/LECCION:.*$/gim,"").replace(/\*\*/g,"").trim(); return t; }
+function limpiarRespuesta(t){ if(!t) return ""; t=t.replace(/https?:\/\/[^\s\)\]]+/g,"").replace(/www\.[^\s\)\]]+/g,"").replace(/\*\*LECCION:.*$/gim,"").replace(/LECCION:.*$/gim,"").replace(/\*\*/g,"").trim(); return t; }
 function esValida(txt){ if(!txt) return false; var t=txt.trim().toLowerCase(); if(t.length<2) return false; if(t.includes("404")||t.includes("not found")||t.includes("<html")) return false; return true; }
 function guardarKey(){
   var k=document.getElementById("geminiKey").value.trim();
@@ -269,7 +267,7 @@ async function probarKey(){
   if(!key){ document.getElementById("keyEstado").innerText="❌ No tenés llave pegada"; return; }
   document.getElementById("keyEstado").innerText="Probando...";
   try{
-    var r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key="+key,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:"Decí hola, soy IAgus"}]}]})});
+    var r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key="+key,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:"Decí hola, soy IAgus"}]}]})});
     if(r.ok){ document.getElementById("keyEstado").innerText="✅ Tu llave ANDA, sos Gemini de verdad 💖"; }
     else{ var err=await r.text(); document.getElementById("keyEstado").innerText="❌ Error: "+err.slice(0,150); }
   }catch(e){ document.getElementById("keyEstado").innerText="❌ No pude conectar: "+e.message; }
@@ -278,7 +276,7 @@ async function hablarConGeminiDirecto(mensaje, memoria){
   var key=localStorage.getItem("geminiKeyIAgus")||(document.getElementById("geminiKey")?document.getElementById("geminiKey").value.trim():"");
   if(!key) return null;
   try{
-    var r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key="+key,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:"Sos IAgus, una amiga argentina de verdad, que habla fluido como persona por WhatsApp, en argentino, con vos, che, dale, ¿viste?. Hacé preguntas, seguí el tema, acordate de todo lo que hablaron antes, contá cosas con tus palabras. No hables como buscador, no digas Según Wikipedia, no des listas secas ni definiciones de diccionario. Si te preguntan algo de conocimiento, contalo como si se lo contaras a una amiga, con onda. No digas nunca que sos IA. Memoria de todos los chats y pasado: "+memoria+"\nAgus dice: "+mensaje}]}]})});
+    var r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key="+key,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:"Sos IAgus, una amiga argentina de verdad, que habla fluido como persona por WhatsApp, en argentino, con vos, che, dale, ¿viste?. Hacé preguntas, seguí el tema, acordate de todo lo que hablaron antes, contá cosas con tus palabras. No hables como buscador, no digas Según Wikipedia, no des listas secas ni definiciones de diccionario. NUNCA mandes links, NUNCA mandes URLs. Si te preguntan algo de conocimiento, contalo como si se lo contaras a una amiga, con onda. No digas nunca que sos IA. Memoria de todos los chats y pasado: "+memoria+"\nAgus dice: "+mensaje}]}]})});
     if(!r.ok){ var err=await r.text(); console.log("Error Gemini:",err); return null; }
     var d=await r.json();
     var txt=d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts[0].text;
