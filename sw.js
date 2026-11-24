@@ -1,4 +1,4 @@
-const CACHE = 'iagus-v92';
+const CACHE = 'iagus-v94';
 const ASSETS = ['./','./index.html','./manifest.json'];
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
