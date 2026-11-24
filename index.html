@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -47,7 +48,7 @@ h3{margin:3px 0;text-align:center}.small{font-size:11px;line-height:1.4}.row{dis
     <div class="tooltitle">🔑 Conexión con Gemini</div>
     <input id="apiKey" type="password" autocomplete="off" placeholder="Pegá tu clave de Gemini">
     <div class="row" style="margin-top:6px"><button id="saveKey">Activar clave</button><button id="testKey">Probar conexión</button></div>
-    <div id="keyStatus" class="small" style="margin-top:5px">Tu clave queda guardada en este celu.</div>
+    <div id="keyStatus" class="small" style="margin-top:5px">La clave queda solo en esta pestaña; no se guarda en el historial.</div>
   </div>
   <div class="tool">
     <div class="tooltitle">💬 Conversaciones</div>
@@ -58,13 +59,13 @@ h3{margin:3px 0;text-align:center}.small{font-size:11px;line-height:1.4}.row{dis
     <div class="tooltitle">📎 Adjuntar PDF al chat</div>
     <input id="sidebarPdfFile" type="file" accept="application/pdf,.pdf" hidden>
     <button id="attachPdf" style="width:100%">📎 Elegir PDF</button>
-    <div id="sidebarPdfStatus" class="small" style="margin-top:5px">El PDF quedará disponible para hacer preguntas en esta conversación. Adjuntás archivo, no copiás texto.</div>
+    <div id="sidebarPdfStatus" class="small" style="margin-top:5px">El PDF quedará disponible para hacer preguntas en esta conversación.</div>
   </div>
   <div class="tool">
     <div class="tooltitle">🖼️ Buscar inspiración</div>
     <input id="imageQuery" placeholder="Ej.: habitación rosa kawaii">
-    <button id="searchImages" style="width:100%;margin-top:6px">🔍 Buscar como Pinterest</button>
-    <div class="small" style="margin-top:5px">Fotos reales de internet mostradas directamente en galería, como Pinterest. No genera imágenes con IA, no muestra links, no Pollinations.</div>
+    <button id="searchImages" style="width:100%;margin-top:6px">🔍 Buscar imágenes existentes</button>
+    <div class="small" style="margin-top:5px">Imágenes existentes de Internet mostradas directamente en una galería. No genera imágenes ni muestra una lista de enlaces.</div>
   </div>
   <div class="tool">
     <div class="tooltitle">🍅 Pomodoro</div>
@@ -102,16 +103,13 @@ h3{margin:3px 0;text-align:center}.small{font-size:11px;line-height:1.4}.row{dis
   <section id="pdfPanel" class="panel hidden">
     <div class="tooltitle">📄 Lector PDF</div>
     <input type="file" id="pdfFile" accept="application/pdf,.pdf">
-    <div id="pdfStatus" class="small">Subí un PDF con texto seleccionable. Adjuntás archivo, no copiás texto.</div>
+    <div id="pdfStatus" class="small">Subí un PDF con texto seleccionable. Los PDF escaneados como imagen pueden necesitar OCR y no se extraen automáticamente.</div>
     <div class="row" style="margin:8px 0"><button id="readPdf">🔊 Leer PDF</button><button id="copyPdf">Copiar texto</button></div>
     <div id="pdfViewer">Todavía no hay ningún PDF cargado.</div>
   </section>
   <section id="audioPanel" class="panel hidden">
     <div class="tooltitle">🔊 Lector de textos</div>
-    <textarea id="audioText" style="height:32vh" placeholder="Pegá un texto o adjuntá un PDF para leerlo en voz alta..."></textarea>
-    <input type="file" id="audioPdfFile" accept="application/pdf,.pdf" style="margin-top:6px">
-    <button id="attachAudioPdf" style="margin-top:6px">📎 Adjuntar PDF para leer</button>
-    <div id="audioPdfStatus" class="small"></div>
+    <textarea id="audioText" style="height:32vh" placeholder="Pegá un texto o cargá un PDF para leerlo en voz alta..."></textarea>
     <div class="row"><label class="small">Velocidad<select id="voiceRate"><option value=".8">Lenta</option><option value="1" selected>Normal</option><option value="1.25">Rápida</option><option value="1.5">Muy rápida</option></select></label><button id="playAudio">▶ Leer</button><button id="pauseAudio">Ⅱ Pausar</button><button id="stopAudio">■ Parar</button></div>
     <div id="audioStatus" class="small"></div>
   </section>
@@ -162,7 +160,7 @@ function sanitizeAssistantHTML(html){
   const t=document.createElement("template");t.innerHTML=String(html||"");
   t.content.querySelectorAll("*").forEach(el=>{
     const tag=el.tagName;
-    if(!["A","IMG","B","STRONG","BR","EM","I","DIV","P"].includes(tag)){el.replaceWith(document.createTextNode(el.textContent||""));return;}
+    if(!["A","IMG","B","STRONG","BR","EM","I"].includes(tag)){el.replaceWith(document.createTextNode(el.textContent||""));return;}
     if(tag==="IMG"){
       let u;try{u=new URL(el.getAttribute("src")||"");}catch(e){}
       if(!u||!["upload.wikimedia.org","commons.wikimedia.org"].includes(u.hostname)){el.remove();return;}
@@ -271,8 +269,8 @@ async function sendMessage(){
   if(sending)return;
   const field=$("message"),text=field.value.trim();if(!text)return;
   field.value="";addMessage("user",text);remember("La usuaria comentó: "+text);
-  if(/\b(imagen(es)?|fotos?|fotograf[ií]as?|dibuj(os?|ame)|ilustraci[oó]n(es)?|avatar(es)?|wallpapers?|fondos? de pantalla|inspiraci[oó]n visual|referencias visuales|buscame (una )?imagen|mostrame (una )?imagen)\b/i.test(text)){
-    $("imageQuery").value=text.replace(/buscame|mostrame|una imagen|imagenes|imagen/gi,"").trim()||text;await searchImages();return;
+  if(/\b(imagen(es)?|fotos?|fotograf[ií]as?|dibuj(os?|ame)|ilustraci[oó]n(es)?|avatar(es)?|wallpapers?|fondos? de pantalla|inspiraci[oó]n visual|referencias visuales)\b/i.test(text)){
+    $("imageQuery").value=text;await searchImages();return;
   }
   sending=true;$("send").disabled=true;$("status").textContent=mode==="privado"?"🔒 Pensando en el dispositivo...":"⚡ IAgus está pensando...";
   try{const answer=mode==="privado"?await privateReply():await geminiReply();addMessage("assistant",answer);remember("IAgus respondió: "+answer.slice(0,220));}
@@ -287,23 +285,21 @@ async function testKey(){
     const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+MODEL+":generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},body:JSON.stringify({contents:[{parts:[{text:"Respondé solo OK"}]}],generationConfig:{maxOutputTokens:8}})});
     const d=await r.json().catch(()=>({}));
     if(!r.ok)throw new Error("HTTP "+r.status+": "+(d.error?.message||"Error de conexión"));
-    $("keyStatus").textContent="✅ Gemini respondió. La clave funciona y quedó guardada.";
+    $("keyStatus").textContent="✅ Gemini respondió. La clave funciona.";
   }catch(e){$("keyStatus").textContent="❌ "+e.message;}
 }
 async function searchImages(){
   const q=$("imageQuery").value.trim();if(!q){$("imageQuery").focus();return;}
-  addMessage("assistant","🔎 Buscando como Pinterest: "+q);
+  addMessage("assistant","🔎 Buscando imágenes existentes sobre: "+q);
   const encoded=encodeURIComponent(q);
   const container=document.createElement("div");container.className="msg ai";
-  const heading=document.createElement("b");heading.textContent="Galería como Pinterest: "+q;container.appendChild(heading);
-  const intro=document.createElement("p");intro.textContent="Fotos reales de Wikimedia Commons mostradas directamente aquí. Sin IA, sin links, sin Pollinations.";container.appendChild(intro);
+  const heading=document.createElement("b");heading.textContent="Galería de imágenes: "+q;container.appendChild(heading);
+  const intro=document.createElement("p");intro.textContent="Resultados visuales de Wikimedia Commons mostrados directamente aquí.";container.appendChild(intro);
   const grid=document.createElement("div");grid.id="imageResults";container.appendChild(grid);$("chat").appendChild(container);
-  $("chat").scrollTop=$("chat").scrollHeight;
   try{
     const url="https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=12&gsrsearch="+encoded+"&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=420&format=json&origin=*";
     const r=await fetch(url);if(!r.ok)throw new Error("HTTP "+r.status);
     const data=await r.json();const pages=Object.values(data.query?.pages||{});
-    if(!pages.length){grid.innerHTML="<p>No encontré imágenes de eso, probá con otra palabra.</p>";return;}
     pages.forEach(pg=>{
       const info=pg.imageinfo?.[0];if(!info)return;
       const card=document.createElement("div");card.className="imagecard";
@@ -313,11 +309,10 @@ async function searchImages(){
       const license=document.createElement("div");license.textContent="Licencia: "+(meta.LicenseShortName?.value||"Ver en Wikimedia");card.appendChild(license);
       grid.appendChild(card);
     });
-    remember("La usuaria buscó imágenes de: "+q);
   }catch(e){grid.innerHTML="<p>⚠️ No pude buscar imágenes: "+escapeText(e.message)+"</p>";}
 }
 async function extractPdf(file){
-  if(!window.pdfjsLib) return "No se pudo cargar el lector de PDF.";
+  if(!window.pdfjsLib)return "No se pudo cargar el lector de PDF.";
   const buf=await file.arrayBuffer();
   const pdf=await pdfjsLib.getDocument({data:buf}).promise;
   let full="";
@@ -332,7 +327,7 @@ async function extractPdf(file){
 function updatePdfStatus(){
   let info=state.pdfs[state.active];
   if(info){pdfText=info.text||"";pdfFileName=info.name||"";$("sidebarPdfStatus").textContent="📎 PDF en este chat: "+pdfFileName+" - Ya podés preguntarle sobre él.";}
-  else{pdfText="";pdfFileName="";$("sidebarPdfStatus").textContent="El PDF quedará disponible para hacer preguntas en esta conversación. Adjuntás archivo, no copiás texto.";}
+  else{pdfText="";pdfFileName="";$("sidebarPdfStatus").textContent="El PDF quedará disponible para hacer preguntas en esta conversación.";}
 }
 async function handlePdfFile(file,isSidebar){
   if(!file)return;
@@ -369,7 +364,7 @@ function speakChunks(){
   speechSynthesis.speak(u);
 }
 function playAudio(){
-  const txt=$("audioText").value.trim();if(!txt){$("audioStatus").textContent="Pegá un texto o adjuntá un PDF.";return;}
+  const txt=$("audioText").value.trim();if(!txt){$("audioStatus").textContent="Pegá un texto o cargá un PDF.";return;}
   speechSynthesis.cancel();speechChunks=txt.match(/.{1,800}([.!?]\s|$)/g)||[txt];speechIndex=0;speakChunks();
 }
 function renderTasks(){
@@ -402,8 +397,6 @@ $("imageQuery").addEventListener("keydown",e=>{if(e.key==="Enter")searchImages()
 $("attachPdf").onclick=()=>$("sidebarPdfFile").click();
 $("sidebarPdfFile").addEventListener("change",e=>{handlePdfFile(e.target.files[0],true);e.target.value="";});
 $("pdfFile").addEventListener("change",e=>{handlePdfFile(e.target.files[0],false);e.target.value="";});
-$("attachAudioPdf").onclick=()=>$("audioPdfFile").click();
-$("audioPdfFile").addEventListener("change",async e=>{ const f=e.target.files[0]; if(!f) return; $("audioPdfStatus").textContent="Leyendo PDF..."; try{ const t=await extractPdf(f); $("audioText").value=t.slice(0,8000); pdfText=t; pdfFileName=f.name; $("audioPdfStatus").textContent="✅ PDF listo: "+f.name+" - Tocá ▶ Leer"; }catch(err){ $("audioPdfStatus").textContent="❌ No pude leerlo: "+err.message; } e.target.value=""; });
 $("readPdf").onclick=()=>{if(!pdfText){$("pdfStatus").textContent="Primero subí un PDF.";return;}$("audioText").value=pdfText.slice(0,8000);document.querySelector('[data-panel="audioPanel"]').click();playAudio();};
 $("copyPdf").onclick=()=>{if(!pdfText)return;navigator.clipboard.writeText(pdfText).then(()=>$("pdfStatus").textContent="✅ Texto copiado");};
 $("playAudio").onclick=playAudio;
