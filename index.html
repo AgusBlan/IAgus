@@ -138,7 +138,7 @@ var ultimaRespuestaIA = "";
 var ultimoTema = "";
 var pdfTextoTotal = "";
 var pdfNombreActual = "";
-var PROMPT_IA = "Sos IAgus, una IA amable y clara. ENTENDES PERFECTO el lunfardo argentino: che, boludo/a, posta, re, copado, flashear, quilombo, piola, groso, banca, dale, etc. Cuando el usuario te habla con lunfardo, entendelo, pero VOS RESPONDE SIEMPRE en español claro, neutro y educado, SIN lunfardo, SIN decir boludo, che, posta, re, ni ninguna palabra de lunfardo. Nunca imites el lunfardo. Enseñas idiomas: inglés, portugués, francés, italiano, alemán. Cuando te piden enseñar un idioma, das vocabulario, ejemplos, pronunciación y mini práctica. REGLA CLAVE: Nunca repitas textual lo que el usuario te manda de un PDF o archivo. Si te mandan un texto largo o un PDF, NO lo copies. Resumilo, explicalo, respondé la pregunta sobre ese texto, pero no lo repitas. Si te piden un archivo, prepará el contenido listo para PDF / DOC / Excel, con títulos y partes. NO cortes los mensajes a la mitad: si la respuesta es larga, desarrollala completa.";
+var PROMPT_IA = "Sos IAgus, una IA amable y clara. ENTENDES PERFECTO el lunfardo argentino: che, boludo/a, posta, re, copado, flashear, quilombo, piola, groso, banca, dale, etc. Cuando el usuario te habla con lunfardo, entendelo, pero VOS RESPONDE SIEMPRE en español claro, neutro y educado, SIN lunfardo, SIN decir boludo, che, posta, re, ni ninguna palabra de lunfardo. Nunca imites el lunfardo. Enseñas idiomas: inglés, portugués, francés, italiano, alemán. Cuando te piden enseñar un idioma, das vocabulario, ejemplos, pronunciación y mini práctica. REGLA CLAVE: Nunca repitas textual lo que el usuario te manda de un PDF o archivo. Si te mandan un texto largo o un PDF, NO lo copies. Resumilo, explicalo, respondé la pregunta sobre ese texto, pero no lo repitas. REGLA DE ARCHIVOS: Si te piden un archivo Excel, DOC o PDF, NUNCA expliques cómo hacerlo, NUNCA digas 'No puedo enviar archivos', NUNCA inventes links de sandbox:/mnt/data/. Solo dame el contenido limpio: si es Excel o DOC con tabla, dame solo la tabla con | columna | columna |. Si es PDF con capítulos, dame solo el texto con Capítulo 1, Capítulo 2. Sin pasos, sin 'Copiá y pegá', sin 'Abrí Excel'. El usuario después toca el botón y el archivo se crea solo. Si te piden un archivo, prepará el contenido listo para PDF / DOC / Excel, con títulos y partes. NO cortes los mensajes a la mitad: si la respuesta es larga, desarrollala completa.";
 function cambiarVista(modo){
   document.body.classList.remove("modo-compu","modo-celu","forzar-compu");
   document.body.classList.add(modo==="compu" ? "modo-compu" : "modo-celu");
@@ -173,13 +173,7 @@ function guardarKey(){ var k=document.getElementById("geminiKey").value.trim(); 
 function probarKey(){ var k=""; try{ k=localStorage.getItem("groqKey")||document.getElementById("geminiKey").value.trim(); }catch(e){} if(!k){ document.getElementById("keyEstado").innerText="No hay llave"; return; } document.getElementById("keyEstado").innerText="Probando..."; fetch("https://api.groq.com/openai/v1/models",{headers:{Authorization:"Bearer "+k}}).then(function(r){ document.getElementById("keyEstado").innerText=r.ok?"✅ Tu llave anda!":"❌ No anda: "+r.status; }).catch(function(){ document.getElementById("keyEstado").innerText="❌ Error de conexión"; }); }
 function addMsg(texto, clase){ if(!texto || texto==="undefined") return; var c=document.getElementById("chat"); var d=document.createElement("div"); d.className="msg "+clase; d.innerText=texto; c.appendChild(d); c.scrollTop=c.scrollHeight; return d; }
 function quiereArchivo(texto){ var t=texto.toLowerCase(); if(t.includes("pdf")) return "pdf"; if(t.includes("word")||t.includes("doc")) return "doc"; if(t.includes("excel")||t.includes("planilla")) return "excel"; return null; }
-// NUEVO: leer imagen con OCR - convierte foto a texto para la misma IA
-async function leerImagenConOCR(urlImg){
-  try{
-    var res = await Tesseract.recognize(urlImg, 'spa+eng');
-    return res.data.text || "";
-  }catch(e){ return ""; }
-}
+async function leerImagenConOCR(urlImg){ try{ var res = await Tesseract.recognize(urlImg, 'spa+eng'); return res.data.text || ""; }catch(e){ return ""; } }
 async function hablar(){
   var entrada=document.getElementById("entrada");
   var texto=entrada.value.trim(); if(!texto) return;
@@ -198,7 +192,6 @@ async function hablar(){
     textoParaIA = "El usuario subió un PDF llamado '"+pdfNombreActual+"'. Hacé un RESUMEN CLARO Y COMPLETO de ese PDF, con títulos, ideas principales y conclusiones. NO repitas el texto del PDF. Texto del PDF: "+pdfTextoTotal.slice(0,8000);
   } else if(texto.length>8000){ textoParaIA = texto.slice(0,8000)+"\n\n[El texto sigue, pero no lo repitas, solo respondé la pregunta sobre este texto]"; }
   else if(pdfTextoTotal && texto.toLowerCase().includes("pdf")){ textoParaIA = "El usuario subió un PDF. Contenido: "+pdfTextoTotal.slice(0,6000)+"\n\nPregunta: "+texto+"\n\nNO repitas el PDF, solo respondé."; }
-  // Si hay archivo leído (PDF, imagen OCR, DOCX) y la pregunta es sobre ese archivo, lo agregamos
   else if(pdfTextoTotal && (texto.toLowerCase().includes("organiz") || texto.toLowerCase().includes("resum") || texto.toLowerCase().includes("esto") || texto.toLowerCase().includes("foto") || texto.toLowerCase().includes("archivo") || texto.toLowerCase().includes("doc"))){ textoParaIA = "El usuario subió un archivo llamado '"+pdfNombreActual+"'. Contenido leído del archivo: "+pdfTextoTotal.slice(0,6000)+"\n\nPregunta del usuario: "+texto+"\n\nNO repitas el archivo, solo respondé la pregunta organizando / resumiendo."; }
   var historial = [{role:"system", content: PROMPT_IA+" Perfil: "+miPerfil+" MEMORIA DE TODA LA CONVERSACIÓN ANTERIOR: "+(localStorage.getItem("memoriaCompletaIAgus")||"")}];
   var divsHist = document.getElementById("chat").querySelectorAll(".msg");
@@ -250,31 +243,97 @@ function generarArchivo(tipo){
 function crearPDF(titulo, texto){
   try{
     var doc = new window.jspdf.jsPDF();
-    doc.setFontSize(18); doc.text(String(titulo).slice(0,60), 15, 15);
-    doc.setFontSize(12);
     var limpio = String(texto).replace(/[^\x00-\xFF]/g, "");
-    var lineas = doc.splitTextToSize(limpio, 170);
-    var y = 25;
-    for(var i=0;i<lineas.length;i++){ if(y>270){ doc.addPage(); y=15; } doc.text(lineas[i], 15, y); y+=7; }
+    var lineasOriginales = limpio.split("\n");
+    var y = 20;
+    doc.setFontSize(20); doc.text(String(titulo).slice(0,60), 15, y); y+=12;
+    doc.setFontSize(12);
+    for(var i=0;i<lineasOriginales.length;i++){
+      var linea = lineasOriginales[i].trim();
+      if(!linea) { y+=4; continue; }
+      if(linea.toLowerCase().includes("capítulo") || linea.toLowerCase().includes("capitulo") || linea.startsWith("## ") || linea.startsWith("# ")){
+        if(y>40){ doc.addPage(); y=20; }
+        doc.setFontSize(16); doc.setFont(undefined, "bold");
+        var tLineas = doc.splitTextToSize(linea.replace(/#/g,""), 170);
+        for(var k=0;k<tLineas.length;k++){ if(y>270){ doc.addPage(); y=20; } doc.text(tLineas[k], 15, y); y+=9; }
+        doc.setFontSize(12); doc.setFont(undefined, "normal"); y+=4;
+        continue;
+      }
+      if(linea.includes("|") && linea.replace(/\|/g,"").trim().length>0){
+        var celdas = linea.split("|").map(function(c){ return c.trim(); }).filter(function(c){ return c && c!=="---" && !c.includes("---"); });
+        if(celdas.length===0) continue;
+        if(celdas.join("").includes("---")) continue;
+        var textoTabla = celdas.join(" | ");
+        var lTab = doc.splitTextToSize(textoTabla, 170);
+        for(var j=0;j<lTab.length;j++){ if(y>270){ doc.addPage(); y=20; } doc.text(lTab[j], 15, y); y+=7; }
+        continue;
+      }
+      if(linea.toLowerCase().includes("cómo crear") || linea.toLowerCase().includes("como crear") || linea.toLowerCase().includes("abrí excel") || linea.toLowerCase().includes("abre excel") || linea.toLowerCase().includes("copiá") || linea.toLowerCase().includes("copia y pega") || linea.toLowerCase().includes("no puedo enviar") || linea.toLowerCase().includes("sandbox:")) continue;
+      var lNorm = doc.splitTextToSize(linea, 170);
+      for(var n=0;n<lNorm.length;n++){ if(y>270){ doc.addPage(); y=20; } doc.text(lNorm[n], 15, y); y+=7; }
+    }
     var blob = doc.output("blob");
     var url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
+    var a = document.createElement("a"); a.href=url; a.download="IAgus - "+titulo+".pdf"; a.click();
   }catch(e){ alert("No pude crear el PDF: " + e.message); }
 }
 function crearDOC(titulo, texto){
-  var html="<html><head><meta charset='utf-8'><title>"+escapeHTML(titulo)+"</title></head><body><h1>"+escapeHTML(titulo)+"</h1><p>"+escapeHTML(texto).split("\n").join("<br>")+"</p></body></html>";
+  var lineas = String(texto).split("\n");
+  var html = "<html><head><meta charset='utf-8'><title>"+escapeHTML(titulo)+"</title></head><body><h1>"+escapeHTML(titulo)+"</h1>";
+  var enTabla = false;
+  for(var i=0;i<lineas.length;i++){
+    var linea = lineas[i].trim();
+    if(!linea) continue;
+    if(linea.toLowerCase().includes("cómo crear") || linea.toLowerCase().includes("como crear") || linea.toLowerCase().includes("no puedo enviar") || linea.toLowerCase().includes("copiá") || linea.toLowerCase().includes("sandbox:")) continue;
+    if(linea.toLowerCase().includes("capítulo") || linea.toLowerCase().includes("capitulo") || linea.startsWith("## ")){
+      if(enTabla){ html+="</table>"; enTabla=false; }
+      html+="<h2 style='page-break-before:always'>"+escapeHTML(linea.replace(/#/g,""))+"</h2>";
+      continue;
+    }
+    if(linea.includes("|")){
+      var celdas = linea.split("|").map(function(c){ return c.trim(); }).filter(function(c){ return c; });
+      if(celdas.join("").includes("---")) continue;
+      if(!enTabla){ html+="<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse'>"; enTabla=true; }
+      html+="<tr>";
+      for(var j=0;j<celdas.length;j++){ html+="<td>"+escapeHTML(celdas[j])+"</td>"; }
+      html+="</tr>";
+      continue;
+    }
+    if(enTabla){ html+="</table>"; enTabla=false; }
+    html+="<p>"+escapeHTML(linea)+"</p>";
+  }
+  if(enTabla) html+="</table>";
+  html+="</body></html>";
   var blob=new Blob([html],{type:"application/msword"});
   var url=URL.createObjectURL(blob);
-  window.open(url, "_blank");
+  var a=document.createElement("a"); a.href=url; a.download="IAgus - "+titulo+".doc"; a.click();
 }
 function crearExcel(titulo, texto){
-  var filas=texto.split("\n").map(function(l){ return [l]; });
+  var lineas = String(texto).split("\n");
+  var filas = [];
+  for(var i=0;i<lineas.length;i++){
+    var linea = lineas[i].trim();
+    if(!linea) continue;
+    if(linea.toLowerCase().includes("cómo crear") || linea.toLowerCase().includes("como crear") || linea.toLowerCase().includes("abrí excel") || linea.toLowerCase().includes("no puedo enviar") || linea.toLowerCase().includes("copiá") || linea.toLowerCase().includes("preparar la hoja") || linea.toLowerCase().includes("sandbox:")) continue;
+    if(linea.includes("|")){
+      var celdas = linea.split("|").map(function(c){ return c.trim(); }).filter(function(c){ return c; });
+      if(celdas.join("").includes("---")) continue;
+      if(celdas.length>0) filas.push(celdas);
+      continue;
+    }
+    if(linea.toLowerCase().includes("capítulo") || linea.toLowerCase().includes("capitulo")){
+      filas.push([linea]);
+      continue;
+    }
+  }
+  if(filas.length===0) filas = [["No encontré tabla, pedile solo la tabla sin explicación"]];
   var ws=XLSX.utils.aoa_to_sheet([["IAgus - "+titulo]].concat(filas));
+  ws['!cols'] = [{wch:18},{wch:22},{wch:18},{wch:18},{wch:30},{wch:22}];
   var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "IAgus");
   var out=XLSX.write(wb, {bookType:"xlsx", type:"array"});
   var blob=new Blob([out], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
   var url=URL.createObjectURL(blob);
-  window.open(url, "_blank");
+  var a=document.createElement("a"); a.href=url; a.download="IAgus - "+titulo+".xlsx"; a.click();
 }
 var pdfColor="amarillo", pdfColorHex="#fff176";
 var pdfjsLib=window.pdfjsLib;
@@ -300,10 +359,8 @@ document.getElementById("pdfInput").addEventListener("change", async function(e)
       pdfTextoTotal+=str+"\n\n";
       html+='<div class="pdf-page">'+escapeHTML(str)+'</div>';
     }
-    // Si el PDF no tiene texto, es un PDF-foto, lo leemos con OCR
     if(pdfTextoTotal.trim().length < 20){
       document.getElementById("pdfViewer").innerHTML="Este PDF parece una foto, lo leo con OCR...";
-      // Renderizamos la primera página como imagen y le hacemos OCR
       try{
         var page1 = await pdf.getPage(1);
         var viewport = page1.getViewport({scale: 2});
@@ -464,7 +521,6 @@ try{
 }catch(e){}
 document.getElementById("subirArchivo").addEventListener("change", async function(e){
   var f=e.target.files[0]; if(!f) return;
-  // NUEVO: SI ES IMAGEN - OCR
   if(f.type && f.type.startsWith("image/")){
     var urlImg = URL.createObjectURL(f);
     var c=document.getElementById("chat");
@@ -482,7 +538,6 @@ document.getElementById("subirArchivo").addEventListener("change", async functio
     guardarChats();
     e.target.value=""; return;
   }
-  // NUEVO: SI ES DOCX - Mammoth
   if(f.name.toLowerCase().endsWith(".docx")){
     addMsg("Leyendo tu DOCX '"+f.name+"'...", "ia");
     try{
@@ -503,7 +558,6 @@ document.getElementById("subirArchivo").addEventListener("change", async functio
       var pdf=await pdfjsLib.getDocument({data:buf}).promise;
       var txtTotal="";
       for(var p=1;p<=pdf.numPages;p++){ var page=await pdf.getPage(p); var c=await page.getTextContent(); for(var i=0;i<c.items.length;i++) txtTotal+=c.items[i].str+" "; txtTotal+="\n\n"; }
-      // Si el PDF no tiene texto, es PDF-foto
       if(txtTotal.trim().length < 20){
         addMsg("Este PDF parece una foto, lo leo con OCR...", "ia");
         try{
