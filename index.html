@@ -9,6 +9,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial;background:#fff6f8;display:flex;min-height:100vh;height:100dvh;overflow:hidden}
@@ -34,7 +36,6 @@ input{width:100%;padding:9px;border-radius:12px;border:2px solid #ffc7dd}
 #pdfViewer{max-height:500px;overflow-y:auto;background:#f5f5f5;border-radius:12px;padding:8px}
 .pdf-page{background:white;margin:8px auto;padding:12px;border-radius:8px;line-height:1.6;font-size:14px;white-space:pre-wrap;word-break:break-word}
 .color-dot{width:30px;height:30px;border-radius:50%;border:3px solid white;cursor:pointer;box-shadow:0 0 0 1px #ccc}
-/* 2 MODOS FIJOS - Compu/Tablet y Celu */
 body.modo-compu{flex-direction:row !important;overflow:hidden !important;height:100dvh !important}
 body.modo-compu .sidebar{display:flex !important;width:260px !important;min-width:180px !important;max-width:500px !important;height:100vh !important;max-height:none !important}
 body.modo-compu #resizer{display:block !important}
@@ -46,7 +47,6 @@ body.modo-celu .sidebar.mostrar{display:flex !important}
 body.modo-celu #resizer{display:none !important}
 body.modo-celu .main{width:100% !important;height:auto !important;min-height:100dvh;padding:8px !important;padding-bottom:160px !important;overflow:visible !important}
 body.modo-celu #chat{height:45vh !important;min-height:300px !important;max-height:55vh !important}
-/* Auto si no elegiste modo todavía */
 @media (min-width: 601px) and (max-width: 1024px){
   body:not(.modo-compu):not(.modo-celu) .sidebar{width:210px !important;min-width:190px !important}
 }
@@ -173,10 +173,17 @@ function guardarKey(){ var k=document.getElementById("geminiKey").value.trim(); 
 function probarKey(){ var k=""; try{ k=localStorage.getItem("groqKey")||document.getElementById("geminiKey").value.trim(); }catch(e){} if(!k){ document.getElementById("keyEstado").innerText="No hay llave"; return; } document.getElementById("keyEstado").innerText="Probando..."; fetch("https://api.groq.com/openai/v1/models",{headers:{Authorization:"Bearer "+k}}).then(function(r){ document.getElementById("keyEstado").innerText=r.ok?"✅ Tu llave anda!":"❌ No anda: "+r.status; }).catch(function(){ document.getElementById("keyEstado").innerText="❌ Error de conexión"; }); }
 function addMsg(texto, clase){ if(!texto || texto==="undefined") return; var c=document.getElementById("chat"); var d=document.createElement("div"); d.className="msg "+clase; d.innerText=texto; c.appendChild(d); c.scrollTop=c.scrollHeight; return d; }
 function quiereArchivo(texto){ var t=texto.toLowerCase(); if(t.includes("pdf")) return "pdf"; if(t.includes("word")||t.includes("doc")) return "doc"; if(t.includes("excel")||t.includes("planilla")) return "excel"; return null; }
+// NUEVO: leer imagen con OCR - convierte foto a texto para la misma IA
+async function leerImagenConOCR(urlImg){
+  try{
+    var res = await Tesseract.recognize(urlImg, 'spa+eng');
+    return res.data.text || "";
+  }catch(e){ return ""; }
+}
 async function hablar(){
   var entrada=document.getElementById("entrada");
   var texto=entrada.value.trim(); if(!texto) return;
-  var chatDondePregunto = chatActivo; // me guardo en qué chat me preguntaste
+  var chatDondePregunto = chatActivo;
   ultimoTema=texto;
   var tipoArchivo=quiereArchivo(texto);
   var esResumenPDF = texto.toLowerCase().includes("resumen") && (texto.toLowerCase().includes("pdf") || texto.toLowerCase().includes("original"));
@@ -191,6 +198,8 @@ async function hablar(){
     textoParaIA = "El usuario subió un PDF llamado '"+pdfNombreActual+"'. Hacé un RESUMEN CLARO Y COMPLETO de ese PDF, con títulos, ideas principales y conclusiones. NO repitas el texto del PDF. Texto del PDF: "+pdfTextoTotal.slice(0,8000);
   } else if(texto.length>8000){ textoParaIA = texto.slice(0,8000)+"\n\n[El texto sigue, pero no lo repitas, solo respondé la pregunta sobre este texto]"; }
   else if(pdfTextoTotal && texto.toLowerCase().includes("pdf")){ textoParaIA = "El usuario subió un PDF. Contenido: "+pdfTextoTotal.slice(0,6000)+"\n\nPregunta: "+texto+"\n\nNO repitas el PDF, solo respondé."; }
+  // Si hay archivo leído (PDF, imagen OCR, DOCX) y la pregunta es sobre ese archivo, lo agregamos
+  else if(pdfTextoTotal && (texto.toLowerCase().includes("organiz") || texto.toLowerCase().includes("resum") || texto.toLowerCase().includes("esto") || texto.toLowerCase().includes("foto") || texto.toLowerCase().includes("archivo") || texto.toLowerCase().includes("doc"))){ textoParaIA = "El usuario subió un archivo llamado '"+pdfNombreActual+"'. Contenido leído del archivo: "+pdfTextoTotal.slice(0,6000)+"\n\nPregunta del usuario: "+texto+"\n\nNO repitas el archivo, solo respondé la pregunta organizando / resumiendo."; }
   var historial = [{role:"system", content: PROMPT_IA+" Perfil: "+miPerfil+" MEMORIA DE TODA LA CONVERSACIÓN ANTERIOR: "+(localStorage.getItem("memoriaCompletaIAgus")||"")}];
   var divsHist = document.getElementById("chat").querySelectorAll(".msg");
   var todos = [];
@@ -211,7 +220,6 @@ async function hablar(){
     var data=await res.json();
         var resp=(data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "No pude responder, intentá de nuevo.";
     ultimaRespuestaIA=limpiarTexto(resp);
-    // Si te cambiaste de chat mientras pensaba, la respuesta va al chat donde preguntaste, no al que estás viendo
     if(chatDondePregunto !== chatActivo){
     if(!chatsGuardados[chatDondePregunto]) chatsGuardados[chatDondePregunto]={nombre:chatDondePregunto, mensajes:[], cerrado:false};
     chatsGuardados[chatDondePregunto].mensajes.push({texto:ultimaRespuestaIA, clase:"ia"});
@@ -292,7 +300,25 @@ document.getElementById("pdfInput").addEventListener("change", async function(e)
       pdfTextoTotal+=str+"\n\n";
       html+='<div class="pdf-page">'+escapeHTML(str)+'</div>';
     }
-    document.getElementById("pdfViewer").innerHTML=html;
+    // Si el PDF no tiene texto, es un PDF-foto, lo leemos con OCR
+    if(pdfTextoTotal.trim().length < 20){
+      document.getElementById("pdfViewer").innerHTML="Este PDF parece una foto, lo leo con OCR...";
+      // Renderizamos la primera página como imagen y le hacemos OCR
+      try{
+        var page1 = await pdf.getPage(1);
+        var viewport = page1.getViewport({scale: 2});
+        var canvas = document.createElement("canvas");
+        canvas.width = viewport.width; canvas.height = viewport.height;
+        var ctx = canvas.getContext("2d");
+        await page1.render({canvasContext: ctx, viewport: viewport}).promise;
+        var dataUrl = canvas.toDataURL("image/png");
+        var textoOCR = await leerImagenConOCR(dataUrl);
+        pdfTextoTotal = textoOCR;
+        document.getElementById("pdfViewer").innerHTML='<div class="pdf-page">'+escapeHTML(textoOCR)+'</div>';
+      }catch(errOCR){ document.getElementById("pdfViewer").innerHTML="No pude leer este PDF-foto: "+errOCR.message; }
+    } else {
+      document.getElementById("pdfViewer").innerHTML=html;
+    }
     document.getElementById("textoAudioLibro").value=pdfTextoTotal;
     document.getElementById("textoAudioGrande").value=pdfTextoTotal;
     try{ localStorage.setItem("pdfRecordadoIAgus", JSON.stringify({nombre: f.name, texto: pdfTextoTotal.slice(0,15000)})); }catch(err){}
@@ -438,13 +464,34 @@ try{
 }catch(e){}
 document.getElementById("subirArchivo").addEventListener("change", async function(e){
   var f=e.target.files[0]; if(!f) return;
+  // NUEVO: SI ES IMAGEN - OCR
   if(f.type && f.type.startsWith("image/")){
     var urlImg = URL.createObjectURL(f);
     var c=document.getElementById("chat");
     var d=document.createElement("div"); d.className="msg vos";
     d.innerHTML="📸 <b>"+escapeHTML(f.name)+"</b><br><img src='"+urlImg+"' style='max-width:100%;border-radius:12px;margin-top:6px'>";
     c.appendChild(d); c.scrollTop=c.scrollHeight;
-    addMsg("Ya veo tu imagen '"+f.name+"'. Contame qué querés que haga con ella: ¿que la describa, que te ayude a estudiar con ella, o que la use para algo?", "ia");
+    addMsg("Leyendo tu foto con OCR, esperame un toque... 💖", "ia");
+    try{
+      var textoFoto = await leerImagenConOCR(urlImg);
+      pdfTextoTotal = textoFoto;
+      pdfNombreActual = f.name;
+      if(textoFoto.trim().length===0){ addMsg("No pude encontrar texto en esa foto. ¿Es una foto con letras claras? Probá sacarle una foto más de cerca y con luz.", "ia"); }
+      else { addMsg("Ya leí tu foto. Dice: "+textoFoto.slice(0,600)+"... Pedime que te lo organice 💖", "ia"); }
+    }catch(err){ addMsg("No pude leer la foto: "+err.message, "ia"); }
+    guardarChats();
+    e.target.value=""; return;
+  }
+  // NUEVO: SI ES DOCX - Mammoth
+  if(f.name.toLowerCase().endsWith(".docx")){
+    addMsg("Leyendo tu DOCX '"+f.name+"'...", "ia");
+    try{
+      var bufDoc = await f.arrayBuffer();
+      var resultDoc = await mammoth.extractRawText({arrayBuffer: bufDoc});
+      pdfTextoTotal = resultDoc.value;
+      pdfNombreActual = f.name;
+      addMsg("Ya leí tu DOCX '"+f.name+"'. Pedime lo que quieras sobre él 💖", "ia");
+    }catch(err){ addMsg("No pude leer el DOCX: "+err.message, "ia"); }
     guardarChats();
     e.target.value=""; return;
   }
@@ -456,11 +503,24 @@ document.getElementById("subirArchivo").addEventListener("change", async functio
       var pdf=await pdfjsLib.getDocument({data:buf}).promise;
       var txtTotal="";
       for(var p=1;p<=pdf.numPages;p++){ var page=await pdf.getPage(p); var c=await page.getTextContent(); for(var i=0;i<c.items.length;i++) txtTotal+=c.items[i].str+" "; txtTotal+="\n\n"; }
+      // Si el PDF no tiene texto, es PDF-foto
+      if(txtTotal.trim().length < 20){
+        addMsg("Este PDF parece una foto, lo leo con OCR...", "ia");
+        try{
+          var page1 = await pdf.getPage(1);
+          var viewport = page1.getViewport({scale: 2});
+          var canvas = document.createElement("canvas");
+          canvas.width = viewport.width; canvas.height = viewport.height;
+          var ctx = canvas.getContext("2d");
+          await page1.render({canvasContext: ctx, viewport: viewport}).promise;
+          txtTotal = await leerImagenConOCR(canvas.toDataURL("image/png"));
+        }catch(eOCR){ addMsg("No pude hacer OCR de este PDF: "+eOCR.message, "ia"); }
+      }
       pdfTextoTotal=txtTotal; pdfNombreActual=f.name;
       try{ localStorage.setItem("pdfRecordadoIAgus", JSON.stringify({nombre:f.name, texto:txtTotal.slice(0,15000)})); }catch(err){}
       document.getElementById("pdfNombre").innerText=f.name; document.getElementById("pdfPaginas").innerText=pdf.numPages;
       document.getElementById("textoAudioLibro").value=txtTotal; document.getElementById("textoAudioGrande").value=txtTotal;
-      addMsg("Listo, ya leí tu PDF '"+f.name+"' y lo guardé. Pedime: 'armame un pdf resumen del pdf original que te mandé'", "ia");
+      addMsg("Listo, ya leí tu PDF '"+f.name+"' y lo guardé. Pedime: 'armame un pdf resumen del pdf original que te mandé' o 'organizame esto'", "ia");
       document.getElementById("estadoIA").innerText=""; guardarChats();
     }catch(err){ addMsg("No pude leer ese PDF: "+err.message, "ia"); }
   } else {
